@@ -44,26 +44,42 @@
 */
 #include <fmt/format.h>
 
+#include <cmath>
 #include <iostream>
 #include <algorithm>
 
 #include "olcNoiseMaker.h"
+#include "helpers.h"
 
-// Global synthesizer variables
-std::atomic<double> dFrequencyOutput = 0.0;			// dominant output frequency of instrument, i.e. the note
-double dOctaveBaseFrequency = 110.0; // A2		// frequency of octave represented by keyboard
-double d12thRootOf2 = pow(2.0, 1.0 / 12.0);		// assuming western 12 notes per ocatve
+constexpr double TWELFTH_ROOT_TWO = 1.05946309435929526456182529494634170077920;
 
-// Function used by olcNoiseMaker to generate sound waves
-// Returns amplitude (-1.0 to +1.0) as a function of time
-double MakeNoise(double dTime)
-{	
-	double dOutput = std::sin(dFrequencyOutput * 2.0 * 3.14159 * dTime);
-	return dOutput * 0.5; // Master Volume
+enum class key
+{
+	A  = 0,
+	As = 1, Bb = As,
+	B  = 2,
+	C  = 3,
+	Cs = 4, Db = Cs,
+	D  = 5,
+	Ds = 6, Eb = Ds,
+	E  = 7,
+	F  = 8,
+	Fs = 9, Gb = Fs,
+	G  = 10
+};
+
+enum class octave {};
+
+constexpr double note(const octave o, const key k)
+{
+	constexpr double A2 = 110.0;
+	return A2 * blga::power(TWELFTH_ROOT_TWO, blga::to_underlying(k));
 }
 
 int main()
 {
+	std::atomic<double> frequency = 0.0;
+
 	std::vector<std::string> devices = get_devices();
 
 	// Display findings
@@ -86,7 +102,9 @@ int main()
 	noise_maker sound(devices[0], 44100, 1, 8, 512);
 
 	// Link noise function with sound machine
-	sound.SetUserFunction(MakeNoise);
+	sound.SetUserFunction([&](double dt) {
+		return 0.5 * std::sin(frequency * 2.0 * 3.14159 * dt);
+	});
 
 	// Sit in loop, capturing keyboard state changes and modify
 	// synthesizer output accordingly
@@ -101,8 +119,8 @@ int main()
 			{
 				if (nCurrentKey != k)
 				{					
-					dFrequencyOutput = dOctaveBaseFrequency * std::pow(d12thRootOf2, k);
-					std::cout << "\rNote On : " << sound.GetTime() << "s " << dFrequencyOutput << "Hz";					
+					frequency = note(octave{2}, key{k});
+					std::cout << "\rNote On : " << sound.GetTime() << "s " << frequency << "Hz";					
 					nCurrentKey = k;
 				}
 
@@ -118,7 +136,7 @@ int main()
 				nCurrentKey = -1;
 			}
 
-			dFrequencyOutput = 0.0;
+			frequency = 0.0;
 		}
 	}
 

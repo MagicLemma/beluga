@@ -176,16 +176,9 @@ private:
 			if (d_wave_headers[d_block_current].dwFlags & WHDR_PREPARED)
 				waveOutUnprepareHeader(d_device, &d_wave_headers[d_block_current], sizeof(WAVEHDR));
 
-			short new_sample = 0;
-			
 			for (unsigned int n = 0; n < d_block_samples; n++)
 			{
-				// User Process
-				if (d_callback) {
-					new_sample = (short)(std::clamp(d_callback(d_time), -1.0, 1.0) * max_sample);
-				}
-
-				d_block_memory[d_block_current * d_block_samples + n] = new_sample;
+				d_block_memory[d_block_current * d_block_samples + n] = (short)(std::clamp(d_callback(d_time), -1.0, 1.0) * max_sample);
 				d_time += dt;
 			}
 
