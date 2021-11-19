@@ -53,7 +53,6 @@
 
 #pragma once
 
-#define UNICODE
 #pragma comment(lib, "winmm.lib")
 
 #include <iostream>
@@ -80,7 +79,7 @@ class olcNoiseMaker
 {
 public:
 
-	olcNoiseMaker(std::wstring sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512)
+	olcNoiseMaker(std::string sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512)
 	{
 		if (g_instance) {
 			std::cout << "BAD - CAN ONLY HAVE ONE INSTANCE\n";
@@ -95,7 +94,7 @@ public:
 		Destroy();
 	}
 
-	bool Create(std::wstring sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512)
+	bool Create(std::string sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512)
 	{
 		m_bReady = false;
 		m_nSampleRate = nSampleRate;
@@ -110,7 +109,7 @@ public:
 		m_userFunction = nullptr;
 
 		// Validate device
-		std::vector<std::wstring> devices = Enumerate();
+		std::vector<std::string> devices = Enumerate();
 		auto d = std::find(devices.begin(), devices.end(), sOutputDevice);
 		if (d != devices.end())
 		{
@@ -184,10 +183,10 @@ public:
 	
 
 public:
-	static std::vector<std::wstring> Enumerate()
+	static std::vector<std::string> Enumerate()
 	{
 		int nDeviceCount = waveOutGetNumDevs();
-		std::vector<std::wstring> sDevices;
+		std::vector<std::string> sDevices;
 		WAVEOUTCAPS woc;
 		for (int n = 0; n < nDeviceCount; n++)
 			if (waveOutGetDevCaps(n, &woc, sizeof(WAVEOUTCAPS)) == S_OK)

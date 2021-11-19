@@ -63,17 +63,17 @@ double MakeNoise(double dTime)
 int main()
 {
 	// Shameless self-promotion
-	std::wcout << "www.OneLoneCoder.com - Synthesizer Part 1" << std::endl << "Single Sine Wave Oscillator, No Polyphony" << std::endl << std::endl;
+	std::cout << "www.OneLoneCoder.com - Synthesizer Part 1" << std::endl << "Single Sine Wave Oscillator, No Polyphony" << std::endl << std::endl;
 
 	// Get all sound hardware
-	std::vector<std::wstring> devices = olcNoiseMaker::Enumerate();
+	std::vector<std::string> devices = olcNoiseMaker::Enumerate();
 
 	// Display findings
-	for (auto d : devices) std::wcout << "Found Output Device: " << d << std::endl;
-	std::wcout << "Using Device: " << devices[0] << std::endl;
+	for (auto d : devices) std::cout << "Found Output Device: " << d << std::endl;
+	std::cout << "Using Device: " << devices[0] << std::endl;
 
 	// Display a keyboard
-	std::wcout << std::endl <<
+	std::cout << std::endl <<
 		"|   |   |   |   |   | |   |   |   |   | |   | |   |   |   |  \n" <<
 		"|   | S |   |   | F | | G |   |   | J | | K | | L |   |   |  \n" <<
 		"|   |___|   |   |___| |___|   |   |___| |___| |___|   |   |__\n" <<
@@ -101,7 +101,7 @@ int main()
 				if (nCurrentKey != k)
 				{					
 					dFrequencyOutput = dOctaveBaseFrequency * std::pow(d12thRootOf2, k);
-					std::wcout << "\rNote On : " << sound.GetTime() << "s " << dFrequencyOutput << "Hz";					
+					std::cout << "\rNote On : " << sound.GetTime() << "s " << dFrequencyOutput << "Hz";					
 					nCurrentKey = k;
 				}
 
@@ -113,7 +113,7 @@ int main()
 		{	
 			if (nCurrentKey != -1)
 			{
-				std::wcout << "\rNote Off: " << sound.GetTime() << "s                        ";
+				std::cout << "\rNote Off: " << sound.GetTime() << "s                        ";
 				nCurrentKey = -1;
 			}
 
