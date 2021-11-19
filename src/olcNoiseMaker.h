@@ -64,7 +64,6 @@
 #include <thread>
 #include <atomic>
 #include <condition_variable>
-using namespace std;
 
 #include <Windows.h>
 
@@ -81,7 +80,7 @@ class olcNoiseMaker
 {
 public:
 
-	olcNoiseMaker(wstring sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512)
+	olcNoiseMaker(std::wstring sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512)
 	{
 		if (g_instance) {
 			std::cout << "BAD - CAN ONLY HAVE ONE INSTANCE\n";
@@ -96,7 +95,7 @@ public:
 		Destroy();
 	}
 
-	bool Create(wstring sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512)
+	bool Create(std::wstring sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512)
 	{
 		m_bReady = false;
 		m_nSampleRate = nSampleRate;
@@ -111,12 +110,12 @@ public:
 		m_userFunction = nullptr;
 
 		// Validate device
-		vector<wstring> devices = Enumerate();
+		std::vector<std::wstring> devices = Enumerate();
 		auto d = std::find(devices.begin(), devices.end(), sOutputDevice);
 		if (d != devices.end())
 		{
 			// Device is available
-			int nDeviceID = distance(devices.begin(), d);
+			int nDeviceID = (int)std::distance(devices.begin(), d);
 			WAVEFORMATEX waveFormat;
 			waveFormat.wFormatTag = WAVE_FORMAT_PCM;
 			waveFormat.nSamplesPerSec = m_nSampleRate;
@@ -151,10 +150,10 @@ public:
 
 		m_bReady = true;
 
-		m_thread = thread(&olcNoiseMaker::MainThread, this);
+		m_thread = std::thread(&olcNoiseMaker::MainThread, this);
 
 		// Start the ball rolling
-		unique_lock<mutex> lm(m_muxBlockNotZero);
+		std::unique_lock<std::mutex> lm(m_muxBlockNotZero);
 		m_cvBlockNotZero.notify_one();
 
 		return true;
@@ -185,10 +184,10 @@ public:
 	
 
 public:
-	static vector<wstring> Enumerate()
+	static std::vector<std::wstring> Enumerate()
 	{
 		int nDeviceCount = waveOutGetNumDevs();
-		vector<wstring> sDevices;
+		std::vector<std::wstring> sDevices;
 		WAVEOUTCAPS woc;
 		for (int n = 0; n < nDeviceCount; n++)
 			if (waveOutGetDevCaps(n, &woc, sizeof(WAVEOUTCAPS)) == S_OK)
@@ -219,17 +218,17 @@ private:
 	unsigned int m_nBlockSamples;
 	unsigned int m_nBlockCurrent;
 
-	T* m_pBlockMemory;
+	short* m_pBlockMemory;
 	WAVEHDR *m_pWaveHeaders;
 	HWAVEOUT m_hwDevice;
 
-	thread m_thread;
-	atomic<bool> m_bReady;
-	atomic<unsigned int> m_nBlockFree;
-	condition_variable m_cvBlockNotZero;
-	mutex m_muxBlockNotZero;
+	std::thread m_thread;
+	std::atomic<bool> m_bReady;
+	std::atomic<unsigned int> m_nBlockFree;
+	std::condition_variable m_cvBlockNotZero;
+	std::mutex m_muxBlockNotZero;
 
-	atomic<double> m_dGlobalTime;
+	std::atomic<double> m_dGlobalTime;
 
 	// Handler for soundcard request for more data
 	void waveOutProc(HWAVEOUT hWaveOut, UINT uMsg, DWORD dwParam1, DWORD dwParam2)
@@ -237,7 +236,7 @@ private:
 		if (uMsg != WOM_DONE) return;
 
 		m_nBlockFree++;
-		unique_lock<mutex> lm(m_muxBlockNotZero);
+		std::unique_lock<std::mutex> lm(m_muxBlockNotZero);
 		m_cvBlockNotZero.notify_one();
 	}
 
@@ -257,16 +256,16 @@ private:
 		double dTimeStep = 1.0 / (double)m_nSampleRate;
 
 		// Goofy hack to get maximum integer for a type at run-time
-		T nMaxSample = (T)pow(2, (sizeof(T) * 8) - 1) - 1;
+		short nMaxSample = (T)pow(2, (sizeof(T) * 8) - 1) - 1;
 		double dMaxSample = (double)nMaxSample;
-		T nPreviousSample = 0;
+		short nPreviousSample = 0;
 
 		while (m_bReady)
 		{
 			// Wait for block to become available
 			if (m_nBlockFree == 0)
 			{
-				unique_lock<mutex> lm(m_muxBlockNotZero);
+				std::unique_lock<std::mutex> lm(m_muxBlockNotZero);
 				m_cvBlockNotZero.wait(lm);
 			}
 
@@ -277,16 +276,16 @@ private:
 			if (m_pWaveHeaders[m_nBlockCurrent].dwFlags & WHDR_PREPARED)
 				waveOutUnprepareHeader(m_hwDevice, &m_pWaveHeaders[m_nBlockCurrent], sizeof(WAVEHDR));
 
-			T nNewSample = 0;
+			short nNewSample = 0;
 			int nCurrentBlock = m_nBlockCurrent * m_nBlockSamples;
 			
 			for (unsigned int n = 0; n < m_nBlockSamples; n++)
 			{
 				// User Process
 				if (m_userFunction == nullptr)
-					nNewSample = (T)(clip(UserProcess(m_dGlobalTime), 1.0) * dMaxSample);
+					nNewSample = (short)(clip(UserProcess(m_dGlobalTime), 1.0) * dMaxSample);
 				else
-					nNewSample = (T)(clip(m_userFunction(m_dGlobalTime), 1.0) * dMaxSample);
+					nNewSample = (short)(clip(m_userFunction(m_dGlobalTime), 1.0) * dMaxSample);
 
 				m_pBlockMemory[nCurrentBlock + n] = nNewSample;
 				nPreviousSample = nNewSample;

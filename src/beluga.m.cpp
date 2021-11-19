@@ -44,12 +44,11 @@
 */
 
 #include <iostream>
-using namespace std;
 
 #include "olcNoiseMaker.h"
 
 // Global synthesizer variables
-atomic<double> dFrequencyOutput = 0.0;			// dominant output frequency of instrument, i.e. the note
+std::atomic<double> dFrequencyOutput = 0.0;			// dominant output frequency of instrument, i.e. the note
 double dOctaveBaseFrequency = 110.0; // A2		// frequency of octave represented by keyboard
 double d12thRootOf2 = pow(2.0, 1.0 / 12.0);		// assuming western 12 notes per ocatve
 
@@ -57,31 +56,30 @@ double d12thRootOf2 = pow(2.0, 1.0 / 12.0);		// assuming western 12 notes per oc
 // Returns amplitude (-1.0 to +1.0) as a function of time
 double MakeNoise(double dTime)
 {	
-	double dOutput = sin(dFrequencyOutput * 2.0 * 3.14159 * dTime);
+	double dOutput = std::sin(dFrequencyOutput * 2.0 * 3.14159 * dTime);
 	return dOutput * 0.5; // Master Volume
 }
 
 int main()
 {
-	cout << sizeof(void*) << " - " << sizeof(DWORD) << "\n";
 	// Shameless self-promotion
-	wcout << "www.OneLoneCoder.com - Synthesizer Part 1" << endl << "Single Sine Wave Oscillator, No Polyphony" << endl << endl;
+	std::wcout << "www.OneLoneCoder.com - Synthesizer Part 1" << std::endl << "Single Sine Wave Oscillator, No Polyphony" << std::endl << std::endl;
 
 	// Get all sound hardware
-	vector<wstring> devices = olcNoiseMaker::Enumerate();
+	std::vector<std::wstring> devices = olcNoiseMaker::Enumerate();
 
 	// Display findings
-	for (auto d : devices) wcout << "Found Output Device: " << d << endl;
-	wcout << "Using Device: " << devices[0] << endl;
+	for (auto d : devices) std::wcout << "Found Output Device: " << d << std::endl;
+	std::wcout << "Using Device: " << devices[0] << std::endl;
 
 	// Display a keyboard
-	wcout << endl <<
-		"|   |   |   |   |   | |   |   |   |   | |   | |   |   |   |" << endl <<
-		"|   | S |   |   | F | | G |   |   | J | | K | | L |   |   |" << endl <<
-		"|   |___|   |   |___| |___|   |   |___| |___| |___|   |   |__" << endl <<
-		"|     |     |     |     |     |     |     |     |     |     |" << endl <<
-		"|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |" << endl <<
-		"|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|" << endl << endl;
+	std::wcout << std::endl <<
+		"|   |   |   |   |   | |   |   |   |   | |   | |   |   |   |  \n" <<
+		"|   | S |   |   | F | | G |   |   | J | | K | | L |   |   |  \n" <<
+		"|   |___|   |   |___| |___|   |   |___| |___| |___|   |   |__\n" <<
+		"|     |     |     |     |     |     |     |     |     |     |\n" <<
+		"|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |\n" <<
+		"|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|\n" << std::endl;
 
 	// Create sound machine!!
 	olcNoiseMaker sound(devices[0], 44100, 1, 8, 512);
@@ -102,8 +100,8 @@ int main()
 			{
 				if (nCurrentKey != k)
 				{					
-					dFrequencyOutput = dOctaveBaseFrequency * pow(d12thRootOf2, k);
-					wcout << "\rNote On : " << sound.GetTime() << "s " << dFrequencyOutput << "Hz";					
+					dFrequencyOutput = dOctaveBaseFrequency * std::pow(d12thRootOf2, k);
+					std::wcout << "\rNote On : " << sound.GetTime() << "s " << dFrequencyOutput << "Hz";					
 					nCurrentKey = k;
 				}
 
@@ -115,7 +113,7 @@ int main()
 		{	
 			if (nCurrentKey != -1)
 			{
-				wcout << "\rNote Off: " << sound.GetTime() << "s                        ";
+				std::wcout << "\rNote Off: " << sound.GetTime() << "s                        ";
 				nCurrentKey = -1;
 			}
 
