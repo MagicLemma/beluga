@@ -42,8 +42,10 @@
 	See video: https://youtu.be/tgamhuQnOkM
 
 */
+#include <fmt/format.h>
 
 #include <iostream>
+#include <algorithm>
 
 #include "olcNoiseMaker.h"
 

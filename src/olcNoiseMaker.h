@@ -153,7 +153,7 @@ public:
 		m_thread = std::thread(&olcNoiseMaker::MainThread, this);
 
 		// Start the ball rolling
-		std::unique_lock<std::mutex> lm(m_muxBlockNotZero);
+		auto lock = std::unique_lock{m_muxBlockNotZero};
 		m_cvBlockNotZero.notify_one();
 
 		g_instance = this;
@@ -191,14 +191,6 @@ public:
 		m_userFunction = func;
 	}
 
-	double clip(double dSample, double dMax)
-	{
-		if (dSample >= 0.0)
-			return fmin(dSample, dMax);
-		else
-			return fmax(dSample, -dMax);
-	}
-
 
 private:
 
@@ -208,7 +200,7 @@ private:
 		if (uMsg != WOM_DONE) return;
 
 		m_nBlockFree++;
-		std::unique_lock<std::mutex> lm(m_muxBlockNotZero);
+		auto lock = std::unique_lock{m_muxBlockNotZero};
 		m_cvBlockNotZero.notify_one();
 	}
 
@@ -228,8 +220,7 @@ private:
 		double dTimeStep = 1.0 / (double)m_nSampleRate;
 
 		// Goofy hack to get maximum integer for a type at run-time
-		short nMaxSample = (T)pow(2, (sizeof(T) * 8) - 1) - 1;
-		double dMaxSample = (double)nMaxSample;
+		const double dMaxSample = (double)((short)std::pow(2, (sizeof(T) * 8) - 1) - 1);
 		short nPreviousSample = 0;
 
 		while (m_bReady)
@@ -237,8 +228,8 @@ private:
 			// Wait for block to become available
 			if (m_nBlockFree == 0)
 			{
-				std::unique_lock<std::mutex> lm(m_muxBlockNotZero);
-				m_cvBlockNotZero.wait(lm);
+				auto lock = std::unique_lock{m_muxBlockNotZero};
+				m_cvBlockNotZero.wait(lock);
 			}
 
 			// Block is here, so use it
@@ -255,7 +246,7 @@ private:
 			{
 				// User Process
 				if (m_userFunction) {
-					nNewSample = (short)(clip(m_userFunction(m_dGlobalTime), 1.0) * dMaxSample);
+					nNewSample = (short)(std::clamp(m_userFunction(m_dGlobalTime), -1.0, 1.0) * dMaxSample);
 				}
 
 				m_pBlockMemory[nCurrentBlock + n] = nNewSample;
