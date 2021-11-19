@@ -77,36 +77,48 @@ static olcNoiseMaker* g_instance = nullptr;
 
 class olcNoiseMaker
 {
+	double(*m_userFunction)(double);
+
+	unsigned int m_nSampleRate;
+	unsigned int m_nChannels;
+	unsigned int m_nBlockCount;
+	unsigned int m_nBlockSamples;
+	unsigned int m_nBlockCurrent;
+
+	std::unique_ptr<short[]> m_pBlockMemory;
+	std::unique_ptr<WAVEHDR[]> m_pWaveHeaders;
+	HWAVEOUT m_hwDevice;
+
+	std::thread m_thread;
+	std::atomic<bool> m_bReady;
+	std::atomic<unsigned int> m_nBlockFree;
+	std::condition_variable m_cvBlockNotZero;
+	std::mutex m_muxBlockNotZero;
+
+	std::atomic<double> m_dGlobalTime;
+
 public:
 
 	olcNoiseMaker(std::string sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512)
+		: m_userFunction{nullptr}
+		, m_nSampleRate{nSampleRate}
+		, m_nChannels{nChannels}
+		, m_nBlockCount{nBlocks}
+		, m_nBlockSamples{nBlockSamples}
+		, m_nBlockCurrent{0}
+		, m_pBlockMemory{std::make_unique<short[]>(m_nBlockCount * m_nBlockSamples)}
+		, m_pWaveHeaders{std::make_unique<WAVEHDR[]>(m_nBlockCount)}
+		, m_hwDevice{nullptr}
+		, m_thread{}
+		, m_bReady{false}
+		, m_nBlockFree{m_nBlockCount}
+		, m_cvBlockNotZero{}
+		, m_muxBlockNotZero{}
+		, m_dGlobalTime{0}
 	{
 		if (g_instance) {
 			std::cout << "BAD - CAN ONLY HAVE ONE INSTANCE\n";
 		}
-		Create(sOutputDevice, nSampleRate, nChannels, nBlocks, nBlockSamples);
-		g_instance = this;
-	}
-
-	~olcNoiseMaker()
-	{
-		g_instance = nullptr;
-		Destroy();
-	}
-
-	bool Create(std::string sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512)
-	{
-		m_bReady = false;
-		m_nSampleRate = nSampleRate;
-		m_nChannels = nChannels;
-		m_nBlockCount = nBlocks;
-		m_nBlockSamples = nBlockSamples;
-		m_nBlockFree = m_nBlockCount;
-		m_nBlockCurrent = 0;
-		m_pBlockMemory = nullptr;
-		m_pWaveHeaders = nullptr;
-
-		m_userFunction = nullptr;
 
 		// Validate device
 		std::vector<std::string> devices = Enumerate();
@@ -126,25 +138,14 @@ public:
 
 			// Open Device if valid
 			if (waveOutOpen(&m_hwDevice, nDeviceID, &waveFormat, (DWORD_PTR)waveOutProcWrap, (DWORD_PTR)this, CALLBACK_FUNCTION) != S_OK)
-				return Destroy();
+				return;
 		}
-
-		// Allocate Wave|Block Memory
-		m_pBlockMemory = new T[m_nBlockCount * m_nBlockSamples];
-		if (m_pBlockMemory == nullptr)
-			return Destroy();
-		ZeroMemory(m_pBlockMemory, sizeof(T) * m_nBlockCount * m_nBlockSamples);
-
-		m_pWaveHeaders = new WAVEHDR[m_nBlockCount];
-		if (m_pWaveHeaders == nullptr)
-			return Destroy();
-		ZeroMemory(m_pWaveHeaders, sizeof(WAVEHDR) * m_nBlockCount);
 
 		// Link headers to block memory
 		for (unsigned int n = 0; n < m_nBlockCount; n++)
 		{
 			m_pWaveHeaders[n].dwBufferLength = m_nBlockSamples * sizeof(T);
-			m_pWaveHeaders[n].lpData = (LPSTR)(m_pBlockMemory + (n * m_nBlockSamples));
+			m_pWaveHeaders[n].lpData = (LPSTR)(m_pBlockMemory.get() + (n * m_nBlockSamples));
 		}
 
 		m_bReady = true;
@@ -155,12 +156,12 @@ public:
 		std::unique_lock<std::mutex> lm(m_muxBlockNotZero);
 		m_cvBlockNotZero.notify_one();
 
-		return true;
+		g_instance = this;
 	}
 
-	bool Destroy()
+	~olcNoiseMaker()
 	{
-		return false;
+		g_instance = nullptr;
 	}
 
 	void Stop()
@@ -169,20 +170,11 @@ public:
 		m_thread.join();
 	}
 
-	// Override to process current sample
-	virtual double UserProcess(double dTime)
-	{
-		return 0.0;
-	}
-
 	double GetTime()
 	{
 		return m_dGlobalTime;
 	}
 
-	
-
-public:
 	static std::vector<std::string> Enumerate()
 	{
 		int nDeviceCount = waveOutGetNumDevs();
@@ -209,25 +201,6 @@ public:
 
 
 private:
-	double(*m_userFunction)(double);
-
-	unsigned int m_nSampleRate;
-	unsigned int m_nChannels;
-	unsigned int m_nBlockCount;
-	unsigned int m_nBlockSamples;
-	unsigned int m_nBlockCurrent;
-
-	short* m_pBlockMemory;
-	WAVEHDR *m_pWaveHeaders;
-	HWAVEOUT m_hwDevice;
-
-	std::thread m_thread;
-	std::atomic<bool> m_bReady;
-	std::atomic<unsigned int> m_nBlockFree;
-	std::condition_variable m_cvBlockNotZero;
-	std::mutex m_muxBlockNotZero;
-
-	std::atomic<double> m_dGlobalTime;
 
 	// Handler for soundcard request for more data
 	void waveOutProc(HWAVEOUT hWaveOut, UINT uMsg, DWORD dwParam1, DWORD dwParam2)
@@ -281,10 +254,9 @@ private:
 			for (unsigned int n = 0; n < m_nBlockSamples; n++)
 			{
 				// User Process
-				if (m_userFunction == nullptr)
-					nNewSample = (short)(clip(UserProcess(m_dGlobalTime), 1.0) * dMaxSample);
-				else
+				if (m_userFunction) {
 					nNewSample = (short)(clip(m_userFunction(m_dGlobalTime), 1.0) * dMaxSample);
+				}
 
 				m_pBlockMemory[nCurrentBlock + n] = nNewSample;
 				nPreviousSample = nNewSample;
