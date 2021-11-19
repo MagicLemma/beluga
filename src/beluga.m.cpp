@@ -64,14 +64,13 @@ double MakeNoise(double dTime)
 
 int main()
 {
-	// Shameless self-promotion
-	std::cout << "www.OneLoneCoder.com - Synthesizer Part 1" << std::endl << "Single Sine Wave Oscillator, No Polyphony" << std::endl << std::endl;
-
-	// Get all sound hardware
-	std::vector<std::string> devices = olcNoiseMaker::Enumerate();
+	std::vector<std::string> devices = get_devices();
 
 	// Display findings
-	for (auto d : devices) std::cout << "Found Output Device: " << d << std::endl;
+	for (auto d : devices) {
+		std::cout << "Found Output Device: " << d << std::endl;
+	}
+
 	std::cout << "Using Device: " << devices[0] << std::endl;
 
 	// Display a keyboard
@@ -84,7 +83,7 @@ int main()
 		"|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|\n" << std::endl;
 
 	// Create sound machine!!
-	olcNoiseMaker sound(devices[0], 44100, 1, 8, 512);
+	noise_maker sound(devices[0], 44100, 1, 8, 512);
 
 	// Link noise function with sound machine
 	sound.SetUserFunction(MakeNoise);
