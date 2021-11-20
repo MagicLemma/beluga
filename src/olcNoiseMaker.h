@@ -32,10 +32,6 @@ std::vector<std::string> get_devices()
 
 class noise_maker
 {
-	// Cannot use the user data param to pass this into the callback as the API is 32bit,
-	// so the pointer gets chopped :/ :/ :/
-	inline static noise_maker* g_instance = nullptr; 
-
 	std::function<double(double)> d_callback;
 
 	blga::audio_buffer d_audio_buffer;
@@ -63,10 +59,6 @@ public:
 		, d_mux_block_not_zero{}
 		, d_time{0}
 	{
-		if (g_instance) {
-			throw std::exception("Can only have one noise maker instance");
-		}
-		g_instance = this;
 
 		// Validate device
 		WAVEFORMATEX waveFormat;
@@ -91,11 +83,6 @@ public:
 		d_cv_block_not_zero.notify_one();
 	}
 
-	~noise_maker()
-	{
-		g_instance = nullptr;
-	}
-
 	void Stop()
 	{
 		d_ready = false;
@@ -116,7 +103,7 @@ public:
 private:
 
 	// Handler for soundcard request for more data
-	void wave_out_proc(HWAVEOUT hWaveOut, UINT uMsg, DWORD dwParam1, DWORD dwParam2)
+	void wave_out_proc(HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwParam1, DWORD_PTR dwParam2)
 	{
 		if (uMsg == WOM_DONE) {
 			d_block_free++;
@@ -126,9 +113,9 @@ private:
 	}
 
 	// Static wrapper for sound card handler
-	inline static void wave_out_proc_wrap(HWAVEOUT hWaveOut, UINT uMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2)
+	inline static void wave_out_proc_wrap(HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2)
 	{
-		g_instance->wave_out_proc(hWaveOut, uMsg, dwParam1, dwParam2);
+		reinterpret_cast<noise_maker*>(dwInstance)->wave_out_proc(hWaveOut, uMsg, dwParam1, dwParam2);
 	}
 
 	// Main thread. This loop responds to requests from the soundcard to fill 'blocks'
