@@ -24,6 +24,12 @@ std::vector<std::string> get_devices()
 	return sDevices;
 }
 
+struct audio_block
+{
+	std::vector<short> data;
+	WAVEHDR            header;
+};
+
 using T = short;
 
 class noise_maker;
@@ -41,8 +47,7 @@ class noise_maker
 	unsigned int d_block_samples;
 	unsigned int d_block_current;
 
-	std::unique_ptr<short[]> d_block_memory;
-	std::unique_ptr<WAVEHDR[]> d_wave_headers;
+	std::vector<audio_block> d_blocks;
 	HWAVEOUT d_device;
 
 	std::thread d_thread;
@@ -62,8 +67,6 @@ public:
 		, d_block_count{nBlocks}
 		, d_block_samples{nBlockSamples}
 		, d_block_current{0}
-		, d_block_memory{std::make_unique<short[]>(d_block_count * d_block_samples)}
-		, d_wave_headers{std::make_unique<WAVEHDR[]>(d_block_count)}
 		, d_device{nullptr}
 		, d_thread{}
 		, d_ready{true}
@@ -92,11 +95,12 @@ public:
 			throw std::exception("Could not open sound device");
 		}
 
-		// Link headers to block memory
-		for (unsigned int n = 0; n < d_block_count; n++)
-		{
-			d_wave_headers[n].dwBufferLength = d_block_samples * sizeof(T);
-			d_wave_headers[n].lpData = (LPSTR)(d_block_memory.get() + (n * d_block_samples));
+		// Initialize blocks
+		d_blocks.resize(d_block_count);
+		for (auto& block : d_blocks) {
+			block.data.resize(d_block_samples, 0);
+			block.header.dwBufferLength = block.data.size() * sizeof(T);
+			block.header.lpData = (LPSTR)block.data.data();
 		}
 
 		d_thread = std::thread(&noise_maker::main_thread, this);
@@ -172,19 +176,21 @@ private:
 			// Block is here, so use it
 			d_block_free--;
 
-			// Prepare block for processing
-			if (d_wave_headers[d_block_current].dwFlags & WHDR_PREPARED)
-				waveOutUnprepareHeader(d_device, &d_wave_headers[d_block_current], sizeof(WAVEHDR));
+			auto& block = d_blocks[d_block_current];
 
-			for (unsigned int n = 0; n < d_block_samples; n++)
+			// Prepare block for processing
+			if (block.header.dwFlags & WHDR_PREPARED)
+				waveOutUnprepareHeader(d_device, &block.header, sizeof(WAVEHDR));
+
+			for (auto& datum : block.data)
 			{
-				d_block_memory[d_block_current * d_block_samples + n] = (short)(std::clamp(d_callback(d_time), -1.0, 1.0) * max_sample);
+				datum = (short)(std::clamp(d_callback(d_time), -1.0, 1.0) * max_sample);
 				d_time += dt;
 			}
 
 			// Send block to sound device
-			waveOutPrepareHeader(d_device, &d_wave_headers[d_block_current], sizeof(WAVEHDR));
-			waveOutWrite(d_device, &d_wave_headers[d_block_current], sizeof(WAVEHDR));
+			waveOutPrepareHeader(d_device, &block.header, sizeof(WAVEHDR));
+			waveOutWrite(d_device, &block.header, sizeof(WAVEHDR));
 			d_block_current++;
 			d_block_current %= d_block_count;
 		}
