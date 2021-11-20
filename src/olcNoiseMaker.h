@@ -1,6 +1,7 @@
 // License: https://github.com/OneLoneCoder/videos/blob/master/LICENSE
 #pragma once
 #pragma comment(lib, "winmm.lib")
+#define NOMINMAX
 
 #include "sound_buffer.h"
 
@@ -11,9 +12,12 @@
 #include <string>
 #include <thread>
 #include <atomic>
+#include <limits>
 #include <condition_variable>
 
 #include <Windows.h>
+
+static constexpr auto short_max = std::numeric_limits<short>::max();
 
 std::vector<std::string> get_devices()
 {
@@ -26,19 +30,12 @@ std::vector<std::string> get_devices()
 	return sDevices;
 }
 
-struct audio_block
-{
-	WAVEHDR            header;
-	std::vector<short> data;
-};
-
-class noise_maker;
-
-// Cannot use the user data param to pass this into the callback as the API is 32bit, so the pointer gets chopped :/ :/ :/
-static noise_maker* g_instance = nullptr;
-
 class noise_maker
 {
+	// Cannot use the user data param to pass this into the callback as the API is 32bit,
+	// so the pointer gets chopped :/ :/ :/
+	inline static noise_maker* g_instance = nullptr; 
+
 	std::function<double(double)> d_callback;
 
 	blga::audio_buffer d_audio_buffer;
@@ -149,9 +146,6 @@ private:
 		d_time = 0.0;
 		double dt = 1.0 / (double)d_sample_rate;
 
-		// Goofy hack to get maximum integer for a type at run-time
-		const double max_sample = (double)((short)std::pow(2, (sizeof(short) * 8) - 1) - 1);
-
 		while (d_ready)
 		{
 			// Wait for block to become available
@@ -165,14 +159,9 @@ private:
 			d_block_free--;
 
 			auto block = d_audio_buffer.next_block();
-
-			// Prepare block for processing
-			if (block.header->dwFlags & WHDR_PREPARED)
-				waveOutUnprepareHeader(d_device, block.header, sizeof(WAVEHDR));
-
 			for (auto& datum : block.data)
 			{
-				datum = (short)(std::clamp(d_callback(d_time), -1.0, 1.0) * max_sample);
+				datum = (short)(std::clamp(d_callback(d_time), -1.0, 1.0) * short_max);
 				d_time += dt;
 			}
 

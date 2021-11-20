@@ -23,6 +23,11 @@ class audio_buffer
 
         void send_to_sound_device(HWAVEOUT device) const
         {
+            // Prepare block for processing
+			if (header->dwFlags & WHDR_PREPARED) {
+				waveOutUnprepareHeader(device, header, sizeof(WAVEHDR));
+            }
+
             waveOutPrepareHeader(device, header, sizeof(WAVEHDR));
 			waveOutWrite(device, header, sizeof(WAVEHDR));
         }
@@ -30,7 +35,7 @@ class audio_buffer
 
     std::vector<block> d_blocks;
     std::size_t        d_current;
-
+  
     audio_buffer(const audio_buffer&) = delete;
     audio_buffer& operator=(const audio_buffer&) = delete;
 
@@ -41,7 +46,7 @@ public:
     {
         for (auto& block : d_blocks) {
             block.data.resize(block_size, 0);
-            block.header.dwBufferLength = block.data.size() * sizeof(short);
+            block.header.dwBufferLength = static_cast<DWORD>(block.data.size() * sizeof(short));
             block.header.lpData = (LPSTR)block.data.data();
 		}
     }
