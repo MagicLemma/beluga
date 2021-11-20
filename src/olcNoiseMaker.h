@@ -2,6 +2,8 @@
 #pragma once
 #pragma comment(lib, "winmm.lib")
 
+#include "sound_buffer.h"
+
 #include <iostream>
 #include <cmath>
 #include <fstream>
@@ -26,11 +28,9 @@ std::vector<std::string> get_devices()
 
 struct audio_block
 {
-	std::vector<short> data;
 	WAVEHDR            header;
+	std::vector<short> data;
 };
-
-using T = short;
 
 class noise_maker;
 
@@ -41,13 +41,11 @@ class noise_maker
 {
 	std::function<double(double)> d_callback;
 
+	blga::audio_buffer d_audio_buffer;
+
 	unsigned int d_sample_rate;
 	unsigned int d_channels;
-	unsigned int d_block_count;
-	unsigned int d_block_samples;
-	unsigned int d_block_current;
 
-	std::vector<audio_block> d_blocks;
 	HWAVEOUT d_device;
 
 	std::thread d_thread;
@@ -62,15 +60,13 @@ public:
 
 	noise_maker(std::string sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512)
 		: d_callback{}
+		, d_audio_buffer{nBlocks, nBlockSamples}
 		, d_sample_rate{nSampleRate}
 		, d_channels{nChannels}
-		, d_block_count{nBlocks}
-		, d_block_samples{nBlockSamples}
-		, d_block_current{0}
 		, d_device{nullptr}
 		, d_thread{}
 		, d_ready{true}
-		, d_block_free{d_block_count}
+		, d_block_free{nBlocks}
 		, d_cv_block_not_zero{}
 		, d_mux_block_not_zero{}
 		, d_time{0}
@@ -83,7 +79,7 @@ public:
 		WAVEFORMATEX waveFormat;
 		waveFormat.wFormatTag = WAVE_FORMAT_PCM;
 		waveFormat.nSamplesPerSec = d_sample_rate;
-		waveFormat.wBitsPerSample = sizeof(T) * 8;
+		waveFormat.wBitsPerSample = sizeof(short) * 8;
 		waveFormat.nChannels = d_channels;
 		waveFormat.nBlockAlign = (waveFormat.wBitsPerSample / 8) * waveFormat.nChannels;
 		waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
@@ -93,14 +89,6 @@ public:
 		if (waveOutOpen(&d_device, 0, &waveFormat, (DWORD_PTR)wave_out_proc_wrap, (DWORD_PTR)this, CALLBACK_FUNCTION) != S_OK)
 		{
 			throw std::exception("Could not open sound device");
-		}
-
-		// Initialize blocks
-		d_blocks.resize(d_block_count);
-		for (auto& block : d_blocks) {
-			block.data.resize(d_block_samples, 0);
-			block.header.dwBufferLength = block.data.size() * sizeof(T);
-			block.header.lpData = (LPSTR)block.data.data();
 		}
 
 		d_thread = std::thread(&noise_maker::main_thread, this);
@@ -176,23 +164,23 @@ private:
 			// Block is here, so use it
 			d_block_free--;
 
-			auto& block = d_blocks[d_block_current];
+			auto& header = d_audio_buffer.current_header();
 
 			// Prepare block for processing
-			if (block.header.dwFlags & WHDR_PREPARED)
-				waveOutUnprepareHeader(d_device, &block.header, sizeof(WAVEHDR));
+			if (header.dwFlags & WHDR_PREPARED)
+				waveOutUnprepareHeader(d_device, &header, sizeof(WAVEHDR));
 
-			for (auto& datum : block.data)
+			for (auto& datum : d_audio_buffer.current_data())
 			{
 				datum = (short)(std::clamp(d_callback(d_time), -1.0, 1.0) * max_sample);
 				d_time += dt;
 			}
 
 			// Send block to sound device
-			waveOutPrepareHeader(d_device, &block.header, sizeof(WAVEHDR));
-			waveOutWrite(d_device, &block.header, sizeof(WAVEHDR));
-			d_block_current++;
-			d_block_current %= d_block_count;
+			waveOutPrepareHeader(d_device, &header, sizeof(WAVEHDR));
+			waveOutWrite(d_device, &header, sizeof(WAVEHDR));
+
+			d_audio_buffer.advance();
 		}
 	}
 };
