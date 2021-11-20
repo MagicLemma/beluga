@@ -38,15 +38,6 @@ int main()
 {
 	std::atomic<double> frequency = 0.0;
 
-	std::vector<std::string> devices = get_devices();
-
-	// Display findings
-	for (auto d : devices) {
-		std::cout << "Found Output Device: " << d << std::endl;
-	}
-
-	std::cout << "Using Device: " << devices[0] << std::endl;
-
 	// Display a keyboard
 	std::cout << std::endl <<
 		"|   |   | |   |   |   |   | |   | |   |   |   |   | |   |   |\n" <<
@@ -57,7 +48,7 @@ int main()
 		"|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|\n" << std::endl;
 
 	// Create sound machine!!
-	noise_maker sound(devices[0], 44100, 1, 8, 512);
+	noise_maker sound(8, 512);
 
 	// Link noise function with sound machine
 	sound.SetUserFunction([&](double dt) {

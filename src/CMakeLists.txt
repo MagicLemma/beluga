@@ -10,6 +10,7 @@ find_package(fmt CONFIG REQUIRED)
 
 add_executable(beluga
     beluga.m.cpp
+    sound_buffer.cpp
 )
 
 target_link_libraries(beluga PRIVATE

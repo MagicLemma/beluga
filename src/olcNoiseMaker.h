@@ -2,6 +2,7 @@
 #pragma once
 #pragma comment(lib, "winmm.lib")
 #define NOMINMAX
+#include <Windows.h>
 
 #include "sound_buffer.h"
 
@@ -15,9 +16,8 @@
 #include <limits>
 #include <condition_variable>
 
-#include <Windows.h>
-
 static constexpr auto short_max = std::numeric_limits<short>::max();
+static constexpr auto sample_rate = 44100u;
 
 std::vector<std::string> get_devices()
 {
@@ -40,14 +40,11 @@ class noise_maker
 
 	blga::audio_buffer d_audio_buffer;
 
-	unsigned int d_sample_rate;
-	unsigned int d_channels;
-
 	HWAVEOUT d_device;
 
 	std::thread d_thread;
 	std::atomic<bool> d_ready;
-	std::atomic<unsigned int> d_block_free;
+	std::atomic<std::size_t> d_block_free;
 	std::condition_variable d_cv_block_not_zero;
 	std::mutex d_mux_block_not_zero;
 
@@ -55,11 +52,9 @@ class noise_maker
 
 public:
 
-	noise_maker(std::string sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512)
+	noise_maker(std::size_t nBlocks = 8, std::size_t nBlockSamples = 512)
 		: d_callback{}
 		, d_audio_buffer{nBlocks, nBlockSamples}
-		, d_sample_rate{nSampleRate}
-		, d_channels{nChannels}
 		, d_device{nullptr}
 		, d_thread{}
 		, d_ready{true}
@@ -71,13 +66,14 @@ public:
 		if (g_instance) {
 			throw std::exception("Can only have one noise maker instance");
 		}
+		g_instance = this;
 
 		// Validate device
 		WAVEFORMATEX waveFormat;
 		waveFormat.wFormatTag = WAVE_FORMAT_PCM;
-		waveFormat.nSamplesPerSec = d_sample_rate;
+		waveFormat.nSamplesPerSec = sample_rate;
 		waveFormat.wBitsPerSample = sizeof(short) * 8;
-		waveFormat.nChannels = d_channels;
+		waveFormat.nChannels = 1;
 		waveFormat.nBlockAlign = (waveFormat.wBitsPerSample / 8) * waveFormat.nChannels;
 		waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
 		waveFormat.cbSize = 0;
@@ -93,8 +89,6 @@ public:
 		// Start the ball rolling
 		auto lock = std::unique_lock{d_mux_block_not_zero};
 		d_cv_block_not_zero.notify_one();
-
-		g_instance = this;
 	}
 
 	~noise_maker()
@@ -144,7 +138,7 @@ private:
 	void main_thread()
 	{
 		d_time = 0.0;
-		double dt = 1.0 / (double)d_sample_rate;
+		double dt = 1.0 / sample_rate;
 
 		while (d_ready)
 		{
