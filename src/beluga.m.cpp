@@ -1,79 +1,37 @@
-/*
-	OneLoneCoder.com - Simple Audio Noisy Thing
-	"Allows you to simply listen to that waveform!" - @Javidx9
-
-	License
-	~~~~~~~
-	Copyright (C) 2018  Javidx9
-	This program comes with ABSOLUTELY NO WARRANTY.
-	This is free software, and you are welcome to redistribute it
-	under certain conditions; See license for details. 
-	Original works located at:
-	https://www.github.com/onelonecoder
-	https://www.onelonecoder.com
-	https://www.youtube.com/javidx9
-
-	GNU GPLv3
-	https://github.com/OneLoneCoder/videos/blob/master/LICENSE
-
-	From Javidx9 :)
-	~~~~~~~~~~~~~~~
-	Hello! Ultimately I don't care what you use this for. It's intended to be 
-	educational, and perhaps to the oddly minded - a little bit of fun. 
-	Please hack this, change it and use it in any way you see fit. You acknowledge 
-	that I am not responsible for anything bad that happens as a result of 
-	your actions. However this code is protected by GNU GPLv3, see the license in the
-	github repo. This means you must attribute me if you use it. You can view this
-	license here: https://github.com/OneLoneCoder/videos/blob/master/LICENSE
-	Cheers!
-
-	Author
-	~~~~~~
-
-	Twitter: @javidx9
-	Blog: www.onelonecoder.com
-
-	Versions
-	~~~~~~~~
-
-	This is the first version of the software. It presents a simple keyboard and a sine
-	wave oscillator.
-
-	See video: https://youtu.be/tgamhuQnOkM
-
-*/
+// License: https://github.com/OneLoneCoder/videos/blob/master/LICENSE
 #include <fmt/format.h>
 
 #include <cmath>
 #include <iostream>
 #include <algorithm>
+#include <numbers>
 
 #include "olcNoiseMaker.h"
 #include "helpers.h"
 
-constexpr double TWELFTH_ROOT_TWO = 1.05946309435929526456182529494634170077920;
-
-enum class key
+enum class key_name
 {
-	A  = 0,
-	As = 1, Bb = As,
-	B  = 2,
-	C  = 3,
-	Cs = 4, Db = Cs,
-	D  = 5,
-	Ds = 6, Eb = Ds,
-	E  = 7,
-	F  = 8,
-	Fs = 9, Gb = Fs,
-	G  = 10
+	C  = 0,
+	Cs = 1, Db = Cs,
+	D  = 2,
+	Ds = 3, Eb = Ds,
+	E  = 4,
+	F  = 5,
+	Fs = 6, Gb = Fs,
+	G  = 7,
+	Gs = 8, Ab = Gs,
+	A  = 9, // A2
+	As = 10, Bb = As,
+	B  = 11,
 };
 
-enum class octave {};
-
-constexpr double note(const octave o, const key k)
+constexpr double note_frequency(const int octave, const key_name k)
 {
-	constexpr double A2 = 110.0;
-	return A2 * blga::power(TWELFTH_ROOT_TWO, blga::to_underlying(k));
+	constexpr double A2_FREQUENCY = 110.0;
+	
+	// The -2 and -9 offsets come from the fact that we are tuned to A2 (octave 2, key 9).
+	const auto key = 12 * (octave - 2) + (blga::to_underlying(k) - 9);
+	return A2_FREQUENCY * blga::power_of_12th_root_two(key);
 }
 
 int main()
@@ -91,9 +49,9 @@ int main()
 
 	// Display a keyboard
 	std::cout << std::endl <<
-		"|   |   |   |   |   | |   |   |   |   | |   | |   |   |   |  \n" <<
-		"|   | S |   |   | F | | G |   |   | J | | K | | L |   |   |  \n" <<
-		"|   |___|   |   |___| |___|   |   |___| |___| |___|   |   |__\n" <<
+		"|   |   | |   |   |   |   | |   | |   |   |   |   | |   |   |\n" <<
+		"|   | S | | D |   |   | G | | H | | J |   |   | L | | ; |   |\n" <<
+		"|   |___| |___|   |   |___| |___| |___|   |   |___| |___|   |\n" <<
 		"|     |     |     |     |     |     |     |     |     |     |\n" <<
 		"|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |\n" <<
 		"|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|\n" << std::endl;
@@ -103,37 +61,35 @@ int main()
 
 	// Link noise function with sound machine
 	sound.SetUserFunction([&](double dt) {
-		return 0.5 * std::sin(frequency * 2.0 * 3.14159 * dt);
+		return 0.2 * std::sin(2.0 * std::numbers::pi * frequency * dt);
 	});
 
-	// Sit in loop, capturing keyboard state changes and modify
-	// synthesizer output accordingly
-	int nCurrentKey = -1;	
-	bool bKeyPressed = false;
+	int current_key = -1;	
+	bool key_pressed = false;
 	while (1)
-	{
-		bKeyPressed = false;
+	{ 
+		key_pressed = false;
 		for (int k = 0; k < 16; k++)
 		{
-			if (GetAsyncKeyState((unsigned char)("ZSXCFVGBNJMK\xbcL\xbe\xbf"[k])) & 0x8000)
+			if (GetAsyncKeyState((unsigned char)("ZSXDCVGBHNJM\xbcL\xbe\xbd\xbf"[k])) & 0x8000)
 			{
-				if (nCurrentKey != k)
-				{					
-					frequency = note(octave{2}, key{k});
+				if (current_key != k)
+				{	
+					frequency = note_frequency(3, key_name{k});
 					std::cout << "\rNote On : " << sound.GetTime() << "s " << frequency << "Hz";					
-					nCurrentKey = k;
+					current_key = k;
 				}
 
-				bKeyPressed = true;
+				key_pressed = true;
 			}
 		}
 
-		if (!bKeyPressed)
+		if (!key_pressed)
 		{	
-			if (nCurrentKey != -1)
+			if (current_key != -1)
 			{
 				std::cout << "\rNote Off: " << sound.GetTime() << "s                        ";
-				nCurrentKey = -1;
+				current_key = -1;
 			}
 
 			frequency = 0.0;
