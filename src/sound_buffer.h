@@ -12,8 +12,20 @@ class audio_buffer
 {
     struct block
     {
-        std::vector<short> data;
         WAVEHDR            header;
+        std::vector<short> data;
+    };
+
+    struct block_proxy
+    {
+        WAVEHDR*         header;
+        std::span<short> data;
+
+        void send_to_sound_device(HWAVEOUT device) const
+        {
+            waveOutPrepareHeader(device, header, sizeof(WAVEHDR));
+			waveOutWrite(device, header, sizeof(WAVEHDR));
+        }
     };
 
     std::vector<block> d_blocks;
@@ -34,17 +46,17 @@ public:
 		}
     }
 
-    WAVEHDR& current_header() {
-        return d_blocks[d_current].header;
-    }
-
-    std::span<short> current_data() {
-        return d_blocks[d_current].data;
-    }
-
-    void advance() {
+    block_proxy next_block()
+    {
+        // Get the next block to use
+        auto& current = d_blocks[d_current];
         ++d_current;
         d_current %= d_blocks.size();
+
+        return {
+            .header = &current.header,
+            .data = current.data
+        };
     }
 };
 

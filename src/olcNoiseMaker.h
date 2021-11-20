@@ -164,23 +164,19 @@ private:
 			// Block is here, so use it
 			d_block_free--;
 
-			auto& header = d_audio_buffer.current_header();
+			auto block = d_audio_buffer.next_block();
 
 			// Prepare block for processing
-			if (header.dwFlags & WHDR_PREPARED)
-				waveOutUnprepareHeader(d_device, &header, sizeof(WAVEHDR));
+			if (block.header->dwFlags & WHDR_PREPARED)
+				waveOutUnprepareHeader(d_device, block.header, sizeof(WAVEHDR));
 
-			for (auto& datum : d_audio_buffer.current_data())
+			for (auto& datum : block.data)
 			{
 				datum = (short)(std::clamp(d_callback(d_time), -1.0, 1.0) * max_sample);
 				d_time += dt;
 			}
 
-			// Send block to sound device
-			waveOutPrepareHeader(d_device, &header, sizeof(WAVEHDR));
-			waveOutWrite(d_device, &header, sizeof(WAVEHDR));
-
-			d_audio_buffer.advance();
+			block.send_to_sound_device(d_device);
 		}
 	}
 };
