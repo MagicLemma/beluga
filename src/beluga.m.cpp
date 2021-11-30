@@ -1,7 +1,7 @@
 #include <cmath>
-#include <iostream>
 #include <algorithm>
 #include <numbers>
+#include <optional>
 
 #include <fmt/format.h>
 
@@ -39,32 +39,36 @@ constexpr std::array keyboard = {
 	'\xbc', 'L', '\xbe', '\xbd', '\xbf'
 };
 
+constexpr std::string_view keyboard_ascii = {
+	"|   |   | |   |   |   |   | |   | |   |   |   |   | |   |   |\n"
+	"|   | S | | D |   |   | G | | H | | J |   |   | L | | ; |   |\n"
+	"|   |___| |___|   |   |___| |___| |___|   |   |___| |___|   |\n"
+	"|     |     |     |     |     |     |     |     |     |     |\n"
+	"|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |\n"
+	"|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|\n"
+};
+
 int main()
 {
-	std::atomic<double> frequency = 0.0;
-
-	std::cout << "|   |   | |   |   |   |   | |   | |   |   |   |   | |   |   |\n"
-		         "|   | S | | D |   |   | G | | H | | J |   |   | L | | ; |   |\n"
-		         "|   |___| |___|   |   |___| |___| |___|   |   |___| |___|   |\n"
-		         "|     |     |     |     |     |     |     |     |     |     |\n"
-		         "|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |\n"
-		         "|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|\n";
+	fmt::print(keyboard_ascii);
 
 	auto sound = blga::noise_maker{};
 
+	std::atomic<double> frequency = 0.0;
 	sound.set_noise_function([&](double dt) {
 		return 0.2 * std::sin(2.0 * std::numbers::pi * frequency * dt);
 	});
 
-	char curr_key = '\0';
-	while (true) { 
+	std::optional<char> curr_key = {};
+
+	while (!(GetAsyncKeyState('A') & 0x8000)) { 
 		bool key_pressed = false;
 		for (auto [index, key] : blga::enumerate(keyboard)) {
 
 			if (GetAsyncKeyState((unsigned char)key) & 0x8000) {
 				if (curr_key != key) {	
 					frequency = note_frequency(3, key_name{index});
-					std::cout << "\rNote On : " << frequency << "Hz";
+					fmt::print("\rNote On: {} Hz", frequency);
 					curr_key = key;
 				}
 
@@ -72,14 +76,10 @@ int main()
 			}
 		}
 
-		if (GetAsyncKeyState('A') & 0x8000) {
-			break;
-		}
-
 		if (!key_pressed) {	
-			if (curr_key != '\0') {
-				std::cout << "\rNote Off                        ";
-				curr_key = '\0';
+			if (curr_key.has_value()) {
+				fmt::print("\rNote Off                        ");
+				curr_key = std::nullopt;
 			}
 
 			frequency = 0.0;
