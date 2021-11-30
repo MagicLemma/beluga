@@ -97,7 +97,7 @@ private:
 		while (d_ready) {
 			d_semaphore.acquire();
 
-			auto block = d_audio_buffer.next_block();
+			auto& block = d_audio_buffer.next_block();
 			for (auto& datum : block.data) {
 				datum = scale(d_callback(time));
 				time += 1.0 / sample_rate;

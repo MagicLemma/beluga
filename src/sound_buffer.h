@@ -7,14 +7,6 @@
 
 namespace blga {
 
-struct block_proxy
-{
-    WAVEHDR*         header;
-    std::span<short> data;
-
-    void send_to_sound_device(HWAVEOUT device) const;
-};
-
 template <std::size_t NumBlocks, std::size_t SamplesPerBlock>
 class audio_buffer
 {
@@ -22,13 +14,24 @@ class audio_buffer
     {
         WAVEHDR                            header;
         std::array<short, SamplesPerBlock> data;
+
+        block() = default;
+
+        block(const block&) = delete;
+        block& operator=(const block&) = delete;
+
+        void send_to_sound_device(HWAVEOUT device)
+        {
+            if (header.dwFlags & WHDR_PREPARED) {
+                waveOutUnprepareHeader(device, &header, sizeof(WAVEHDR));
+            }
+            waveOutPrepareHeader(device, &header, sizeof(WAVEHDR));
+            waveOutWrite(device, &header, sizeof(WAVEHDR));
+        }
     };
 
     std::array<block, NumBlocks> d_blocks;
     std::size_t                  d_current;
-  
-    audio_buffer(const audio_buffer&) = delete;
-    audio_buffer& operator=(const audio_buffer&) = delete;
 
 public:
     audio_buffer()
@@ -41,15 +44,10 @@ public:
         }
     }
 
-    block_proxy next_block()
+    block& next_block()
     {
-        auto& current = d_blocks[d_current++];
-        d_current %= d_blocks.size();
-
-        return {
-            .header = &current.header,
-            .data = current.data
-        };
+        d_current = (d_current + 1) % d_blocks.size();
+        return d_blocks[d_current];
     }
 };
 
