@@ -29,7 +29,7 @@ class audio_buffer
     audio_buffer& operator=(const audio_buffer&) = delete;
 
 public:
-    audio_buffer(std::size_t num_blocks, std::size_t block_size);
+    audio_buffer(std::size_t num_blocks, std::size_t samples_per_block);
 
     block_proxy next_block();
 };

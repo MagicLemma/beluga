@@ -1,8 +1,16 @@
 #pragma once
 #include <utility>
 #include <type_traits>
+#include <ranges>
 
 namespace blga {
+
+constexpr auto enumerate(int start = 0)
+{
+    return std::views::transform([start]<typename T>(T&& val) mutable {
+        return std::make_pair(start++, std::forward<T>(val));
+    });
+}
 
 template <class Enum>
 constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept

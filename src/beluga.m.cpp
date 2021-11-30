@@ -34,6 +34,11 @@ constexpr double note_frequency(const int octave, const key_name k)
 	return A2_FREQUENCY * blga::power_of_12th_root_two(key);
 }
 
+constexpr std::array keyboard = {
+	'Z', 'S', 'X', 'D', 'C', 'V', 'G', 'B', 'H', 'N', 'J', 'M',
+	'\xbc', 'L', '\xbe', '\xbd', '\xbf'
+};
+
 int main()
 {
 	std::atomic<double> frequency = 0.0;
@@ -51,41 +56,46 @@ int main()
 	noise_maker sound(8, 512);
 
 	// Link noise function with sound machine
-	sound.SetUserFunction([&](double dt) {
+	sound.set_noise_function([&](double dt) {
 		return 0.2 * std::sin(2.0 * std::numbers::pi * frequency * dt);
 	});
 
-	int current_key = -1;	
-	bool key_pressed = false;
+
+	char curr_key = '\0';
 	while (1)
 	{ 
-		key_pressed = false;
-		for (int k = 0; k < 16; k++)
+		bool key_pressed = false;
+		for (auto [index, key] : keyboard | blga::enumerate())
 		{
-			if (GetAsyncKeyState((unsigned char)("ZSXDCVGBHNJM\xbcL\xbe\xbd\xbf"[k])) & 0x8000)
+			if (GetAsyncKeyState((unsigned char)key) & 0x8000)
 			{
-				if (current_key != k)
+				if (curr_key != key)
 				{	
-					frequency = note_frequency(3, key_name{k});
-					std::cout << "\rNote On : " << sound.GetTime() << "s " << frequency << "Hz";					
-					current_key = k;
+					frequency = note_frequency(3, key_name{index});
+					std::cout << "\rNote On : " << frequency << "Hz";
+					curr_key = key;
 				}
 
 				key_pressed = true;
 			}
 		}
 
+		if (GetAsyncKeyState('A') & 0x8000) {
+			break;
+		}
+
 		if (!key_pressed)
 		{	
-			if (current_key != -1)
+			if (curr_key != '\0')
 			{
-				std::cout << "\rNote Off: " << sound.GetTime() << "s                        ";
-				current_key = -1;
+				std::cout << "\rNote Off                        ";
+				curr_key = '\0';
 			}
 
 			frequency = 0.0;
 		}
 	}
 
+	sound.stop();
 	return 0;
 }

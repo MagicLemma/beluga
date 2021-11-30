@@ -19,6 +19,16 @@
 static constexpr auto short_max = std::numeric_limits<short>::max();
 static constexpr auto sample_rate = 44100u;
 
+static constexpr auto wave_format = WAVEFORMATEX{
+	.wFormatTag = WAVE_FORMAT_PCM,
+	.nChannels = 1,
+	.nSamplesPerSec = sample_rate,
+	.nAvgBytesPerSec = sample_rate * sizeof(short),
+	.nBlockAlign = sizeof(short),
+	.wBitsPerSample = sizeof(short) * 8,
+	.cbSize = 0
+};
+
 std::vector<std::string> get_devices()
 {
 	int nDeviceCount = waveOutGetNumDevs();
@@ -30,6 +40,40 @@ std::vector<std::string> get_devices()
 	return sDevices;
 }
 
+class block_notification_context
+{
+	std::atomic<std::size_t> block_free;
+	std::condition_variable  cv;
+	std::mutex               mtx;
+
+public:
+	block_notification_context(std::size_t num_block)
+		: block_free(num_block)
+	{}
+
+	void start()
+	{
+		auto lock = std::unique_lock{mtx};
+		cv.notify_one();
+	}
+
+	void post_notification()
+	{
+		auto lock = std::unique_lock{mtx};
+		block_free++;
+		cv.notify_one();
+	}
+
+	void wait_for_notification()
+	{
+		if (block_free == 0) {
+			auto lock = std::unique_lock{mtx};
+			cv.wait(lock);
+		}
+		block_free--;
+	}
+};
+
 class noise_maker
 {
 	std::function<double(double)> d_callback;
@@ -40,61 +84,37 @@ class noise_maker
 
 	std::thread d_thread;
 	std::atomic<bool> d_ready;
-	std::atomic<std::size_t> d_block_free;
-	std::condition_variable d_cv_block_not_zero;
-	std::mutex d_mux_block_not_zero;
 
-	std::atomic<double> d_time;
+	block_notification_context d_block_ctx;
 
 public:
 
-	noise_maker(std::size_t nBlocks = 8, std::size_t nBlockSamples = 512)
+	noise_maker(std::size_t num_blocks = 8, std::size_t samples_per_block = 512)
 		: d_callback{}
-		, d_audio_buffer{nBlocks, nBlockSamples}
+		, d_audio_buffer{num_blocks, samples_per_block}
 		, d_device{nullptr}
 		, d_thread{}
 		, d_ready{true}
-		, d_block_free{nBlocks}
-		, d_cv_block_not_zero{}
-		, d_mux_block_not_zero{}
-		, d_time{0}
+		, d_block_ctx{num_blocks}
 	{
-
-		// Validate device
-		WAVEFORMATEX waveFormat;
-		waveFormat.wFormatTag = WAVE_FORMAT_PCM;
-		waveFormat.nSamplesPerSec = sample_rate;
-		waveFormat.wBitsPerSample = sizeof(short) * 8;
-		waveFormat.nChannels = 1;
-		waveFormat.nBlockAlign = (waveFormat.wBitsPerSample / 8) * waveFormat.nChannels;
-		waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
-		waveFormat.cbSize = 0;
-
 		// Open Device if valid
-		if (waveOutOpen(&d_device, 0, &waveFormat, (DWORD_PTR)wave_out_proc_wrap, (DWORD_PTR)this, CALLBACK_FUNCTION) != S_OK)
+		if (waveOutOpen(&d_device, 0, &wave_format, (DWORD_PTR)wave_out_proc_wrap, (DWORD_PTR)&d_block_ctx, CALLBACK_FUNCTION) != S_OK)
 		{
 			throw std::exception("Could not open sound device");
 		}
 
 		d_thread = std::thread(&noise_maker::main_thread, this);
 
-		// Start the ball rolling
-		auto lock = std::unique_lock{d_mux_block_not_zero};
-		d_cv_block_not_zero.notify_one();
+		d_block_ctx.start();
 	}
 
-	void Stop()
+	void stop()
 	{
 		d_ready = false;
 		d_thread.join();
 	}
 
-	double GetTime()
-	{
-		return d_time;
-	}
-
-	void SetUserFunction(const std::function<double(double)>& callback)
+	void set_noise_function(const std::function<double(double)>& callback)
 	{
 		d_callback = callback;
 	}
@@ -102,20 +122,12 @@ public:
 
 private:
 
-	// Handler for soundcard request for more data
-	void wave_out_proc(HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwParam1, DWORD_PTR dwParam2)
-	{
-		if (uMsg == WOM_DONE) {
-			d_block_free++;
-			auto lock = std::unique_lock{d_mux_block_not_zero};
-			d_cv_block_not_zero.notify_one();
-		}
-	}
-
-	// Static wrapper for sound card handler
 	inline static void wave_out_proc_wrap(HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2)
 	{
-		reinterpret_cast<noise_maker*>(dwInstance)->wave_out_proc(hWaveOut, uMsg, dwParam1, dwParam2);
+		if (uMsg == WOM_DONE) {
+			auto ctx = reinterpret_cast<block_notification_context*>(dwInstance);
+			ctx->post_notification();
+		}
 	}
 
 	// Main thread. This loop responds to requests from the soundcard to fill 'blocks'
@@ -124,26 +136,18 @@ private:
 	// and then issued to the soundcard.
 	void main_thread()
 	{
-		d_time = 0.0;
-		double dt = 1.0 / sample_rate;
+		const double dt = 1.0 / sample_rate;
 
+		double time = 0.0;
 		while (d_ready)
 		{
-			// Wait for block to become available
-			if (d_block_free == 0)
-			{
-				auto lock = std::unique_lock{d_mux_block_not_zero};
-				d_cv_block_not_zero.wait(lock);
-			}
-
-			// Block is here, so use it
-			d_block_free--;
+			d_block_ctx.wait_for_notification();
 
 			auto block = d_audio_buffer.next_block();
 			for (auto& datum : block.data)
 			{
-				datum = (short)(std::clamp(d_callback(d_time), -1.0, 1.0) * short_max);
-				d_time += dt;
+				datum = (short)(std::clamp(d_callback(time), -1.0, 1.0) * short_max);
+				time += dt;
 			}
 
 			block.send_to_sound_device(d_device);
