@@ -15,7 +15,6 @@
 
 namespace blga {
 
-static constexpr auto short_max = std::numeric_limits<short>::max();
 static constexpr auto sample_rate = 44100u;
 static constexpr auto num_blocks = std::size_t{8};
 static constexpr auto samples_per_block = std::size_t{512};
@@ -28,6 +27,11 @@ static constexpr auto wave_format = WAVEFORMATEX{
 	.wBitsPerSample = sizeof(short) * 8,
 	.cbSize = 0
 };
+
+inline short scale(double value)
+{
+	return static_cast<short>(std::clamp(value, -1.0, 1.0) * std::numeric_limits<short>::max());
+}
 
 class noise_maker
 {
@@ -57,8 +61,7 @@ public:
 			(DWORD_PTR)wave_out_proc_wrap, (DWORD_PTR)&d_semaphore, CALLBACK_FUNCTION
 		);
 
-		if (rc != S_OK)
-		{
+		if (rc != S_OK) {
 			throw std::exception("Could not open sound device");
 		}
 
@@ -80,28 +83,24 @@ public:
 private:
 
 	static void wave_out_proc_wrap(
-		HWAVEOUT, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR, DWORD_PTR)
+		HWAVEOUT, UINT msg, DWORD_PTR user_data, DWORD_PTR, DWORD_PTR)
 	{
-		if (uMsg == WOM_DONE) {
-			auto& semaphore = *reinterpret_cast<std::counting_semaphore<num_blocks>*>(dwInstance);
+		if (msg == WOM_DONE) {
+			auto& semaphore = *reinterpret_cast<std::counting_semaphore<num_blocks>*>(user_data);
 			semaphore.release();
 		}
 	}
 
 	void main_thread()
 	{
-		const double dt = 1.0 / sample_rate;
-
 		double time = 0.0;
-		while (d_ready)
-		{
+		while (d_ready) {
 			d_semaphore.acquire();
 
 			auto block = d_audio_buffer.next_block();
-			for (auto& datum : block.data)
-			{
-				datum = (short)(std::clamp(d_callback(time), -1.0, 1.0) * short_max);
-				time += dt;
+			for (auto& datum : block.data) {
+				datum = scale(d_callback(time));
+				time += 1.0 / sample_rate;
 			}
 
 			block.send_to_sound_device(d_device);

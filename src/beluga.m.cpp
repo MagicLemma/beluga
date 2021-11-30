@@ -24,13 +24,14 @@ enum class key_name
 	B  = 11,
 };
 
-constexpr double note_frequency(const int octave, const key_name k)
+double note_frequency(const int octave, const key_name k)
 {
-	constexpr double A2_FREQUENCY = 110.0;
+	constexpr double a2_frequency = 110.0;
+	constexpr double twelfth_root_two = 1.05946309435929526456182529494634170077920; // BIG
 	
 	// The -2 and -9 offsets come from the fact that we are tuned to A2 (octave 2, key 9).
 	const auto key = 12 * (octave - 2) + (blga::to_underlying(k) - 9);
-	return A2_FREQUENCY * blga::power_of_12th_root_two(key);
+	return a2_frequency * std::pow(twelfth_root_two, key);
 }
 
 constexpr std::array keyboard = {
@@ -42,29 +43,23 @@ int main()
 {
 	std::atomic<double> frequency = 0.0;
 
-	// Display a keyboard
-	std::cout << std::endl <<
-		"|   |   | |   |   |   |   | |   | |   |   |   |   | |   |   |\n" <<
-		"|   | S | | D |   |   | G | | H | | J |   |   | L | | ; |   |\n" <<
-		"|   |___| |___|   |   |___| |___| |___|   |   |___| |___|   |\n" <<
-		"|     |     |     |     |     |     |     |     |     |     |\n" <<
-		"|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |\n" <<
-		"|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|\n" << std::endl;
+	std::cout << "|   |   | |   |   |   |   | |   | |   |   |   |   | |   |   |\n"
+		         "|   | S | | D |   |   | G | | H | | J |   |   | L | | ; |   |\n"
+		         "|   |___| |___|   |   |___| |___| |___|   |   |___| |___|   |\n"
+		         "|     |     |     |     |     |     |     |     |     |     |\n"
+		         "|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |\n"
+		         "|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|\n";
 
-	// Create sound machine!!
 	auto sound = blga::noise_maker{};
 
-	// Link noise function with sound machine
 	sound.set_noise_function([&](double dt) {
 		return 0.2 * std::sin(2.0 * std::numbers::pi * frequency * dt);
 	});
 
-
 	char curr_key = '\0';
-	while (true)
-	{ 
+	while (true) { 
 		bool key_pressed = false;
-		for (auto [index, key] : keyboard | blga::enumerate()) {
+		for (auto [index, key] : blga::enumerate(keyboard)) {
 
 			if (GetAsyncKeyState((unsigned char)key) & 0x8000) {
 				if (curr_key != key) {	
