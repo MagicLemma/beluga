@@ -1,4 +1,3 @@
-// License: https://github.com/OneLoneCoder/videos/blob/master/LICENSE
 #pragma once
 #pragma comment(lib, "winmm.lib")
 #define NOMINMAX
@@ -30,17 +29,6 @@ static constexpr auto wave_format = WAVEFORMATEX{
 	.cbSize = 0
 };
 
-std::vector<std::string> get_devices()
-{
-	int nDeviceCount = waveOutGetNumDevs();
-	std::vector<std::string> sDevices;
-	WAVEOUTCAPS woc;
-	for (int n = 0; n < nDeviceCount; n++)
-		if (waveOutGetDevCaps(n, &woc, sizeof(WAVEOUTCAPS)) == S_OK)
-			sDevices.push_back(woc.szPname);
-	return sDevices;
-}
-
 class noise_maker
 {
 	std::function<double(double)> d_callback;
@@ -64,8 +52,12 @@ public:
 		, d_ready{true}
 		, d_semaphore{num_blocks}
 	{
-		// Open Device if valid
-		if (waveOutOpen(&d_device, 0, &wave_format, (DWORD_PTR)wave_out_proc_wrap, (DWORD_PTR)&d_semaphore, CALLBACK_FUNCTION) != S_OK)
+		const auto rc = waveOutOpen(
+			&d_device, 0, &wave_format,
+			(DWORD_PTR)wave_out_proc_wrap, (DWORD_PTR)&d_semaphore, CALLBACK_FUNCTION
+		);
+
+		if (rc != S_OK)
 		{
 			throw std::exception("Could not open sound device");
 		}
@@ -87,17 +79,15 @@ public:
 
 private:
 
-	inline static void wave_out_proc_wrap(HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2)
+	static void wave_out_proc_wrap(
+		HWAVEOUT, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR, DWORD_PTR)
 	{
 		if (uMsg == WOM_DONE) {
-			reinterpret_cast<std::counting_semaphore<>*>(dwInstance)->release();
+			auto& semaphore = *reinterpret_cast<std::counting_semaphore<num_blocks>*>(dwInstance);
+			semaphore.release();
 		}
 	}
 
-	// Main thread. This loop responds to requests from the soundcard to fill 'blocks'
-	// with audio data. If no requests are available it goes dormant until the sound
-	// card is ready for more data. The block is fille by the "user" in some manner
-	// and then issued to the soundcard.
 	void main_thread()
 	{
 		const double dt = 1.0 / sample_rate;
