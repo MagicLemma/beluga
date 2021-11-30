@@ -48,6 +48,11 @@ constexpr std::string_view keyboard_ascii = {
 	"|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|\n"
 };
 
+bool is_key_down(char key)
+{
+	return GetAsyncKeyState(static_cast<unsigned char>(key)) & 0x8000;
+}
+
 int main()
 {
 	fmt::print(keyboard_ascii);
@@ -61,11 +66,11 @@ int main()
 
 	std::optional<char> curr_key = {};
 
-	while (!(GetAsyncKeyState('A') & 0x8000)) { 
+	while (!is_key_down('A')) { 
 		bool key_pressed = false;
-		for (auto [index, key] : blga::enumerate(keyboard)) {
 
-			if (GetAsyncKeyState((unsigned char)key) & 0x8000) {
+		for (auto [index, key] : blga::enumerate(keyboard)) {
+			if (is_key_down(key)) {
 				if (curr_key != key) {	
 					frequency = note_frequency(3, key_name{index});
 					fmt::print("\rNote On: {} Hz", frequency);
