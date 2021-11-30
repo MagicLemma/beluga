@@ -14,9 +14,12 @@
 #include <limits>
 #include <semaphore>
 
+namespace blga {
+
 static constexpr auto short_max = std::numeric_limits<short>::max();
 static constexpr auto sample_rate = 44100u;
-
+static constexpr auto num_blocks = std::size_t{8};
+static constexpr auto samples_per_block = std::size_t{512};
 static constexpr auto wave_format = WAVEFORMATEX{
 	.wFormatTag = WAVE_FORMAT_PCM,
 	.nChannels = 1,
@@ -42,20 +45,20 @@ class noise_maker
 {
 	std::function<double(double)> d_callback;
 
-	blga::audio_buffer d_audio_buffer;
+	blga::audio_buffer<num_blocks, samples_per_block> d_audio_buffer;
 
 	HWAVEOUT d_device;
 
 	std::thread d_thread;
 	std::atomic<bool> d_ready;
 
-	std::counting_semaphore<> d_semaphore;
+	std::counting_semaphore<num_blocks> d_semaphore;
 
 public:
 
-	noise_maker(std::size_t num_blocks = 8, std::size_t samples_per_block = 512)
+	noise_maker()
 		: d_callback{}
-		, d_audio_buffer{num_blocks, samples_per_block}
+		, d_audio_buffer{}
 		, d_device{nullptr}
 		, d_thread{}
 		, d_ready{true}
@@ -115,3 +118,5 @@ private:
 		}
 	}
 };
+
+}

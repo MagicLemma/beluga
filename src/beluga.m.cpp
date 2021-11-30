@@ -1,12 +1,11 @@
-// License: https://github.com/OneLoneCoder/videos/blob/master/LICENSE
-#include <fmt/format.h>
-
 #include <cmath>
 #include <iostream>
 #include <algorithm>
 #include <numbers>
 
-#include "olcNoiseMaker.h"
+#include <fmt/format.h>
+
+#include "noise_maker.h"
 #include "helpers.h"
 
 enum class key_name
@@ -53,7 +52,7 @@ int main()
 		"|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|\n" << std::endl;
 
 	// Create sound machine!!
-	noise_maker sound(8, 512);
+	auto sound = blga::noise_maker{};
 
 	// Link noise function with sound machine
 	sound.set_noise_function([&](double dt) {
@@ -62,15 +61,13 @@ int main()
 
 
 	char curr_key = '\0';
-	while (1)
+	while (true)
 	{ 
 		bool key_pressed = false;
-		for (auto [index, key] : keyboard | blga::enumerate())
-		{
-			if (GetAsyncKeyState((unsigned char)key) & 0x8000)
-			{
-				if (curr_key != key)
-				{	
+		for (auto [index, key] : keyboard | blga::enumerate()) {
+
+			if (GetAsyncKeyState((unsigned char)key) & 0x8000) {
+				if (curr_key != key) {	
 					frequency = note_frequency(3, key_name{index});
 					std::cout << "\rNote On : " << frequency << "Hz";
 					curr_key = key;
@@ -84,10 +81,8 @@ int main()
 			break;
 		}
 
-		if (!key_pressed)
-		{	
-			if (curr_key != '\0')
-			{
+		if (!key_pressed) {	
+			if (curr_key != '\0') {
 				std::cout << "\rNote Off                        ";
 				curr_key = '\0';
 			}
