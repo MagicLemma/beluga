@@ -6,15 +6,13 @@
 
 #include "sound_buffer.h"
 
-#include <iostream>
 #include <cmath>
-#include <fstream>
 #include <vector>
 #include <string>
 #include <thread>
 #include <atomic>
 #include <limits>
-#include <condition_variable>
+#include <semaphore>
 
 static constexpr auto short_max = std::numeric_limits<short>::max();
 static constexpr auto sample_rate = 44100u;
@@ -40,40 +38,6 @@ std::vector<std::string> get_devices()
 	return sDevices;
 }
 
-class block_notification_context
-{
-	std::atomic<std::size_t> block_free;
-	std::condition_variable  cv;
-	std::mutex               mtx;
-
-public:
-	block_notification_context(std::size_t num_block)
-		: block_free(num_block)
-	{}
-
-	void start()
-	{
-		auto lock = std::unique_lock{mtx};
-		cv.notify_one();
-	}
-
-	void post_notification()
-	{
-		auto lock = std::unique_lock{mtx};
-		block_free++;
-		cv.notify_one();
-	}
-
-	void wait_for_notification()
-	{
-		if (block_free == 0) {
-			auto lock = std::unique_lock{mtx};
-			cv.wait(lock);
-		}
-		block_free--;
-	}
-};
-
 class noise_maker
 {
 	std::function<double(double)> d_callback;
@@ -85,7 +49,7 @@ class noise_maker
 	std::thread d_thread;
 	std::atomic<bool> d_ready;
 
-	block_notification_context d_block_ctx;
+	std::counting_semaphore<> d_semaphore;
 
 public:
 
@@ -95,17 +59,15 @@ public:
 		, d_device{nullptr}
 		, d_thread{}
 		, d_ready{true}
-		, d_block_ctx{num_blocks}
+		, d_semaphore{num_blocks}
 	{
 		// Open Device if valid
-		if (waveOutOpen(&d_device, 0, &wave_format, (DWORD_PTR)wave_out_proc_wrap, (DWORD_PTR)&d_block_ctx, CALLBACK_FUNCTION) != S_OK)
+		if (waveOutOpen(&d_device, 0, &wave_format, (DWORD_PTR)wave_out_proc_wrap, (DWORD_PTR)&d_semaphore, CALLBACK_FUNCTION) != S_OK)
 		{
 			throw std::exception("Could not open sound device");
 		}
 
 		d_thread = std::thread(&noise_maker::main_thread, this);
-
-		d_block_ctx.start();
 	}
 
 	void stop()
@@ -125,8 +87,7 @@ private:
 	inline static void wave_out_proc_wrap(HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2)
 	{
 		if (uMsg == WOM_DONE) {
-			auto ctx = reinterpret_cast<block_notification_context*>(dwInstance);
-			ctx->post_notification();
+			reinterpret_cast<std::counting_semaphore<>*>(dwInstance)->release();
 		}
 	}
 
@@ -141,7 +102,7 @@ private:
 		double time = 0.0;
 		while (d_ready)
 		{
-			d_block_ctx.wait_for_notification();
+			d_semaphore.acquire();
 
 			auto block = d_audio_buffer.next_block();
 			for (auto& datum : block.data)
