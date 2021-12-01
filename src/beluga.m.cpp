@@ -1,12 +1,13 @@
+#include "constants.h"
+#include "helpers.h"
+#include "noise_maker.h"
+
+#include <fmt/format.h>
+
 #include <cmath>
 #include <algorithm>
 #include <numbers>
 #include <optional>
-
-#include <fmt/format.h>
-
-#include "noise_maker.h"
-#include "helpers.h"
 
 enum class key_name
 {
@@ -34,20 +35,6 @@ double note_frequency(const int octave, const key_name k)
 	return a2_frequency * std::pow(twelfth_root_two, key);
 }
 
-constexpr std::array keyboard = {
-	'Z', 'S', 'X', 'D', 'C', 'V', 'G', 'B', 'H', 'N', 'J', 'M',
-	'\xbc', 'L', '\xbe', '\xbd', '\xbf'
-};
-
-constexpr std::string_view keyboard_ascii = {
-	"|   |   | |   |   |   |   | |   | |   |   |   |   | |   |   |\n"
-	"|   | S | | D |   |   | G | | H | | J |   |   | L | | ; |   |\n"
-	"|   |___| |___|   |   |___| |___| |___|   |   |___| |___|   |\n"
-	"|     |     |     |     |     |     |     |     |     |     |\n"
-	"|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |\n"
-	"|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|\n"
-};
-
 bool is_key_down(char key)
 {
 	return GetAsyncKeyState(static_cast<unsigned char>(key)) & 0x8000;
@@ -55,7 +42,7 @@ bool is_key_down(char key)
 
 int main()
 {
-	fmt::print(keyboard_ascii);
+	fmt::print(blga::keyboard_ascii);
 
 	auto sound = blga::noise_maker{};
 
@@ -69,7 +56,7 @@ int main()
 	while (!is_key_down('A')) { 
 		bool key_pressed = false;
 
-		for (auto [index, key] : blga::enumerate(keyboard)) {
+		for (auto [index, key] : blga::enumerate(blga::keyboard)) {
 			if (is_key_down(key)) {
 				if (curr_key != key) {	
 					frequency = note_frequency(3, key_name{index});
