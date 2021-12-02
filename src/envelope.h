@@ -2,7 +2,7 @@
 
 namespace blga {
 
-auto cutoff(double amplitude) -> double
+inline auto cutoff(double amplitude) -> double
 {
     return amplitude > 0.001 ? amplitude : 0.0;
 }
