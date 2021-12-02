@@ -9,12 +9,12 @@ auto cutoff(double amplitude) -> double
 
 struct envelope
 {
-    double attack_time = 0.01;
-    double decay_time = 0.01;
-    double release_time = 1.0;
+    double attack_time;
+    double decay_time;
+    double release_time;
 
-    double start_amplitude = 1.0;
-    double sustain_amplitude = 0.8;
+    double start_amplitude;
+    double sustain_amplitude;
 
     double on_time = 0.0;
     double off_time = 0.0;
@@ -26,11 +26,11 @@ struct envelope
         if (note_on) {
             auto note_time = dt - on_time;
 
-            if (0 <= note_time && note_time < attack_time) { // Attack
+            if (note_time < attack_time) { // Attack
                 return cutoff((note_time / attack_time) * start_amplitude);
             }
 
-            if (0 <= note_time && note_time < attack_time + decay_time) { // Decay
+            if (note_time < attack_time + decay_time) { // Decay
                 return cutoff(
                     ((note_time - attack_time) / decay_time)  *
                     (sustain_amplitude - start_amplitude) +
@@ -40,10 +40,10 @@ struct envelope
 
             return cutoff(sustain_amplitude); // Sustain
 
-        } else {
-            auto note_time = dt - off_time;
-            return cutoff((1.0 - (note_time / release_time)) * sustain_amplitude);
         }
+
+        auto note_time = dt - off_time;
+        return cutoff((1.0 - (note_time / release_time)) * sustain_amplitude);
     }
 };
 

@@ -48,7 +48,13 @@ int main()
 	auto sound = blga::noise_maker{};
 
 	auto frequency = std::atomic<double>{0.0};
-    auto envelope = blga::envelope{};
+    auto envelope = blga::envelope{
+        .attack_time = 0.01,
+        .decay_time = 0.01,
+        .release_time = 1.0,
+        .start_amplitude = 1.0,
+        .sustain_amplitude = 0.8
+    };
 
 	sound.set_noise_function([&](double dt) { 
         double amp = envelope.amplitude(dt);
