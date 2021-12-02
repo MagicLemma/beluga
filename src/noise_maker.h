@@ -17,6 +17,7 @@ class noise_maker
 
 	std::thread d_thread;
 	std::atomic<bool> d_ready;
+    std::atomic<double> d_time;
 
 	std::counting_semaphore<num_blocks> d_semaphore;
 
@@ -26,6 +27,8 @@ public:
 	void stop();
 
 	void set_noise_function(const std::function<double(double)>& callback);
+
+    double get_time() const { return d_time; }
 };
 
 }

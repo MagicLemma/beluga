@@ -12,7 +12,7 @@
 namespace blga {
 namespace {
 
-short scale(double value)
+auto scale(double value) -> short
 {
 	return static_cast<short>(std::clamp(value, -1.0, 1.0) * std::numeric_limits<short>::max());
 }
@@ -24,6 +24,7 @@ noise_maker::noise_maker()
     , d_audio_buffer{}
     , d_thread{}
     , d_ready{true}
+    , d_time{0.0}
     , d_semaphore{num_blocks}
 {
     // Callback passed to WaveOpen. Releases the semaphore to request more data.
@@ -45,14 +46,13 @@ noise_maker::noise_maker()
 
     // Thread that acquires the semaphore to send more data to WaveOpen.
     d_thread = std::thread([&, device]{
-        double time = 0.0;
         while (d_ready) {
             d_semaphore.acquire();
 
             auto& block = d_audio_buffer.next_block();
             for (auto& datum : block.data) {
-                datum = scale(d_callback(time));
-                time += 1.0 / sample_rate;
+                datum = scale(d_callback(d_time));
+                d_time += 1.0 / sample_rate;
             }
 
             block.send_to_sound_device(device);

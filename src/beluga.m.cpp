@@ -1,6 +1,7 @@
 #include "constants.h"
 #include "helpers.h"
 #include "noise_maker.h"
+#include "envelope.h"
 
 #include <fmt/format.h>
 
@@ -46,9 +47,12 @@ int main()
 
 	auto sound = blga::noise_maker{};
 
-	std::atomic<double> frequency = 0.0;
-	sound.set_noise_function([&](double dt) {
-		return 0.2 * std::sin(2.0 * std::numbers::pi * frequency * dt);
+	auto frequency = std::atomic<double>{0.0};
+    auto envelope = blga::envelope{};
+
+	sound.set_noise_function([&](double dt) { 
+        double amp = envelope.amplitude(dt);
+		return amp * std::sin(2.0 * std::numbers::pi * frequency * dt);
 	});
 
 	std::optional<char> curr_key = {};
@@ -61,6 +65,8 @@ int main()
 				if (curr_key != key) {	
 					frequency = note_frequency(3, key_name{index});
 					fmt::print("\rNote On: {} Hz", frequency);
+                    envelope.on_time = sound.get_time();
+                    envelope.note_on = true;
 					curr_key = key;
 				}
 
@@ -71,10 +77,10 @@ int main()
 		if (!key_pressed) {	
 			if (curr_key.has_value()) {
 				fmt::print("\rNote Off                        ");
+                envelope.off_time = sound.get_time();
+                envelope.note_on = false;
 				curr_key = std::nullopt;
 			}
-
-			frequency = 0.0;
 		}
 	}
 
