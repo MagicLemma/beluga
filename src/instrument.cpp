@@ -13,10 +13,11 @@ instrument::instrument(
 {
 }
 
-void instrument::note_on(double dt)
+void instrument::note_on(double dt, double frequency)
 {
     d_envelope.on_time = dt;
     d_envelope.note_on = true;
+    d_frequency = frequency;
 }
 
 void instrument::note_off(double dt)

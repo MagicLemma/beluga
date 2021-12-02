@@ -1,6 +1,7 @@
 #pragma once
 #include "constants.h"
 #include "audio_buffer.h"
+#include "instrument.h"
 
 #include <atomic>
 #include <functional>
@@ -11,7 +12,9 @@ namespace blga {
 
 class noise_maker
 {
-	std::function<double(double)> d_callback;
+    // Fix the race condition in accessing this (mostly will go when we switch to
+    // using notes)
+    blga::instrument d_instrument;
 
 	blga::audio_buffer<blga::num_blocks, blga::samples_per_block> d_audio_buffer;
 
@@ -22,13 +25,13 @@ class noise_maker
 	std::counting_semaphore<num_blocks> d_semaphore;
 
 public:
-	noise_maker();
+	noise_maker(const blga::instrument& instrument);
 
 	void stop();
 
-	void set_noise_function(const std::function<double(double)>& callback);
-
     double get_time() const { return d_time; }
+
+    blga::instrument& get_instrument() { return d_instrument; }
 };
 
 }

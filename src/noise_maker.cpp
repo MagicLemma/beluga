@@ -19,8 +19,8 @@ auto scale(double value) -> short
 
 }
 
-noise_maker::noise_maker()
-    : d_callback{}
+noise_maker::noise_maker(const blga::instrument& instrument)
+    : d_instrument{instrument}
     , d_audio_buffer{}
     , d_thread{}
     , d_ready{true}
@@ -51,7 +51,7 @@ noise_maker::noise_maker()
 
             auto& block = d_audio_buffer.next_block();
             for (auto& datum : block.data) {
-                datum = scale(d_callback(d_time));
+                datum = scale(d_instrument.amplitude(d_time));
                 d_time += 1.0 / sample_rate;
             }
 
@@ -64,11 +64,6 @@ void noise_maker::stop()
 {
     d_ready = false;
     d_thread.join();
-}
-
-void noise_maker::set_noise_function(const std::function<double(double)>& callback)
-{
-    d_callback = callback;
 }
 
 }

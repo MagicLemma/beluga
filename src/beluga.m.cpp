@@ -46,18 +46,8 @@ int main()
 {
 	fmt::print(blga::keyboard_ascii);
 
-	auto sound = blga::noise_maker{};
 
-	auto frequency = std::atomic<double>{0.0};
-    auto envelope = blga::envelope{
-        .attack_time = 0.01,
-        .decay_time = 0.01,
-        .release_time = 1.0,
-        .start_amplitude = 1.0,
-        .sustain_amplitude = 0.8
-    };
-
-    blga::instrument kb(
+    auto kb = blga::instrument{
         0.0,
         blga::envelope{
             .attack_time = 0.01,
@@ -72,14 +62,9 @@ int main()
 
             return std::sin(two_pi * frequency * dt + lfo);
         }
-    );
+    };
 
-	sound.set_noise_function([&](double dt) {
-        constexpr auto two_pi = 2.0 * std::numbers::pi;
-        const auto lfo = 0.01 * frequency * std::sin(two_pi * 5.0 * dt);
-
-        return envelope.amplitude(dt) * std::sin(two_pi * frequency * dt + lfo);
-	});
+	auto sound = blga::noise_maker{kb};
 
 	std::optional<char> curr_key = {};
 
@@ -88,11 +73,12 @@ int main()
 
 		for (auto [index, key] : blga::enumerate(blga::keyboard)) {
 			if (is_key_down(key)) {
-				if (curr_key != key) {	
-					frequency = note_frequency(3, key_name{index});
-					fmt::print("\rNote On: {} Hz", frequency);
-                    envelope.on_time = sound.get_time();
-                    envelope.note_on = true;
+				if (curr_key != key) {
+                    auto freq = note_frequency(3, key_name{index});
+					fmt::print("\rNote On: {} Hz", freq);
+                    sound.get_instrument().note_on(
+                        sound.get_time(), freq
+                    );
 					curr_key = key;
 				}
 
@@ -103,8 +89,7 @@ int main()
 		if (!key_pressed) {	
 			if (curr_key.has_value()) {
 				fmt::print("\rNote Off                        ");
-                envelope.off_time = sound.get_time();
-                envelope.note_on = false;
+                sound.get_instrument().note_off(sound.get_time());
 				curr_key = std::nullopt;
 			}
 		}
