@@ -56,9 +56,11 @@ int main()
         .sustain_amplitude = 0.8
     };
 
-	sound.set_noise_function([&](double dt) { 
-        double amp = envelope.amplitude(dt);
-		return amp * std::sin(2.0 * std::numbers::pi * frequency * dt);
+	sound.set_noise_function([&](double dt) {
+        constexpr auto two_pi = 2.0 * std::numbers::pi;
+        const auto lfo = 0.01 * frequency * std::sin(two_pi * 5.0 * dt);
+
+        return envelope.amplitude(dt) * std::sin(two_pi * frequency * dt + lfo);
 	});
 
 	std::optional<char> curr_key = {};
