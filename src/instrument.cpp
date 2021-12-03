@@ -13,22 +13,39 @@ instrument::instrument(
 {
 }
 
-void instrument::note_on(double dt, double frequency)
+void instrument::note_on(char note, double dt, double frequency)
 {
-    d_envelope.on_time = dt;
-    d_envelope.note_on = true;
-    d_frequency = frequency;
+    d_notes[note].on = dt;
+    d_notes[note].active = true;
+    d_notes[note].frequency = frequency;
 }
 
-void instrument::note_off(double dt)
+void instrument::note_off(char note, double dt)
 {
-    d_envelope.off_time = dt;
-    d_envelope.note_on = false;
+    d_notes[note].off = dt;
+    d_notes[note].active = false;
 }
 
 auto instrument::amplitude(double dt) -> double
 {
-    return d_envelope.amplitude(dt) * d_oscillator(d_frequency, dt);
+    double amp = 0.0;
+    double scale = 0.0;
+    for (const auto& [key, note] : d_notes) {
+        amp += (
+            d_envelope.amplitude(dt, note.on, note.off, note.active) *
+            d_oscillator(note.frequency, dt)
+        );
+        ++scale;
+    }
+    return amp / scale;
+}
+
+auto instrument::is_note_active(char note) const -> bool
+{
+    if (auto it = d_notes.find(note); it != d_notes.end()) {
+        return it->second.active;
+    }
+    return false;
 }
 
 }

@@ -65,31 +65,18 @@ int main()
 
 	auto sound = blga::noise_maker{kb};
 
-	std::optional<char> curr_key = {};
-
-	while (!is_key_down('A')) { 
-		bool key_pressed = false;
-
+	while (!is_key_down('A')) {
+		auto& instrument = sound.get_instrument();
 		for (auto [index, key] : blga::enumerate(blga::keyboard)) {
-			if (is_key_down(key)) {
-				if (curr_key != key) {
-                    auto freq = note_frequency(3, key_name{index});
-					fmt::print("\rNote On: {} Hz", freq);
-                    sound.get_instrument().note_on(
-                        sound.get_time(), freq
-                    );
-					curr_key = key;
-				}
+			bool key_down = is_key_down(key);
+			bool active = instrument.is_note_active(key);
+			auto freq = note_frequency(3, key_name{index});
 
-				key_pressed = true;
+			if (key_down && !active) {
+				sound.get_instrument().note_on(key, sound.get_time(), freq);
 			}
-		}
-
-		if (!key_pressed) {	
-			if (curr_key.has_value()) {
-				fmt::print("\rNote Off                        ");
-                sound.get_instrument().note_off(sound.get_time());
-				curr_key = std::nullopt;
+			else if (!key_down && active) {
+				sound.get_instrument().note_off(key, sound.get_time());
 			}
 		}
 	}
