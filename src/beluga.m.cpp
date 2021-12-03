@@ -46,7 +46,6 @@ int main()
 {
 	fmt::print(blga::keyboard_ascii);
 
-
     auto kb = blga::instrument{
         0.0,
         blga::envelope{
@@ -58,7 +57,7 @@ int main()
         },
         [&](double frequency, double dt) {
             constexpr auto two_pi = 2.0 * std::numbers::pi;
-            const auto lfo = 0.000 * frequency * std::sin(two_pi * 5.0 * dt);
+            const auto lfo = 0.003 * frequency * std::sin(two_pi * 5.0 * dt);
 
             return std::sin(two_pi * frequency * dt + lfo);
         }
