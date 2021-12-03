@@ -18,7 +18,7 @@ class noise_maker
 
 	blga::audio_buffer<blga::num_blocks, blga::samples_per_block> d_audio_buffer;
 
-	std::thread d_thread;
+	std::jthread d_thread;
 	std::atomic<bool> d_ready;
     std::atomic<double> d_time;
 
@@ -26,8 +26,7 @@ class noise_maker
 
 public:
 	noise_maker(const blga::instrument& instrument);
-
-	void stop();
+    ~noise_maker();
 
     double get_time() const { return d_time; }
 

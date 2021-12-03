@@ -45,7 +45,7 @@ noise_maker::noise_maker(const blga::instrument& instrument)
     }
 
     // Thread that acquires the semaphore to send more data to WaveOpen.
-    d_thread = std::thread([&, device]{
+    d_thread = std::jthread([&, device]{
         while (d_ready) {
             d_semaphore.acquire();
 
@@ -60,10 +60,9 @@ noise_maker::noise_maker(const blga::instrument& instrument)
     });
 }
 
-void noise_maker::stop()
+noise_maker::~noise_maker()
 {
     d_ready = false;
-    d_thread.join();
 }
 
 }

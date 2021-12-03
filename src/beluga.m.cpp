@@ -53,12 +53,12 @@ int main()
             .attack_time = 0.01,
             .decay_time = 0.01,
             .release_time = 1.0,
-            .start_amplitude = 1.0,
+            .start_amplitude = 1.2,
             .sustain_amplitude = 0.8
         },
         [&](double frequency, double dt) {
             constexpr auto two_pi = 2.0 * std::numbers::pi;
-            const auto lfo = 0.01 * frequency * std::sin(two_pi * 5.0 * dt);
+            const auto lfo = 0.000 * frequency * std::sin(two_pi * 5.0 * dt);
 
             return std::sin(two_pi * frequency * dt + lfo);
         }
@@ -95,6 +95,5 @@ int main()
 		}
 	}
 
-	sound.stop();
 	return 0;
 }
