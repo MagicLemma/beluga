@@ -68,8 +68,8 @@ int main()
 	while (!is_key_down('A')) {
 		auto& instrument = sound.get_instrument();
 		for (auto [index, key] : blga::enumerate(blga::keyboard)) {
-			bool key_down = is_key_down(key);
-			bool active = instrument.is_note_active(key);
+			auto key_down = is_key_down(key);
+			auto active = instrument.is_note_active(key);
 			auto freq = note_frequency(3, key_name{index});
 
 			if (key_down && !active) {
