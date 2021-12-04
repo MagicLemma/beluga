@@ -43,6 +43,7 @@ auto main() -> int
 	auto sound = blga::noise_maker{kb};
 
 	while (!is_key_down('A')) {
+		auto lock = std::unique_lock{sound.get_instrument_mtx()};
 		auto& instrument = sound.get_instrument();
 		for (auto [index, key] : blga::enumerate(blga::keyboard)) {
 			auto key_down = is_key_down(key);

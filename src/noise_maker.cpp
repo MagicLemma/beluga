@@ -48,7 +48,8 @@ noise_maker::noise_maker(const blga::instrument& instrument)
     d_thread = std::jthread([&, device]{
         while (d_ready) {
             d_semaphore.acquire();
-
+            auto lock = std::unique_lock{d_instrument_mtx};
+            
             auto& block = d_audio_buffer.next_block();
             for (auto& datum : block.data) {
                 datum = scale(d_instrument.amplitude(d_time));
