@@ -45,18 +45,19 @@ auto main() -> int
 	while (!is_key_down('A')) {
 		auto lock = std::unique_lock{sound.get_instrument_mtx()};
 		auto& instrument = sound.get_instrument();
+		
 		for (auto [index, key] : blga::enumerate(blga::keyboard)) {
 			auto key_down = is_key_down(key);
 			auto active = instrument.is_note_active(key);
 			auto time = sound.get_time();
 
 			if (key_down && !active) {
-				instrument.note_on(key, time);
 				fmt::print("\rNote {} Hz", blga::note_frequency(15 + index));
+				instrument.note_on(key, time);
 			}
 			else if (!key_down && active) {
-				instrument.note_off(key, time);
 				fmt::print("\rNote off                         ");
+				instrument.note_off(key, time);
 			}
 		}
 	}
