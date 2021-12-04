@@ -14,7 +14,7 @@ instrument::instrument(
     // Create the keyboard
     for (auto [index, keyboard_button] : blga::enumerate(blga::keyboard)) {
         d_notes[keyboard_button] = {
-            .key = 15 + index,
+            .key = 15 + index, // Bumped up by 15 so that the first note is C3
             .toggle_time = -1.0,
             .active = false
         };

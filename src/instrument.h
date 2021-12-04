@@ -22,10 +22,7 @@ class instrument
     blga::oscillator d_oscillator;
 
 public:
-    instrument(
-        const blga::envelope& envelope,
-        const blga::oscillator& oscillator
-    );
+    instrument(const blga::envelope& envelope, const blga::oscillator& oscillator);
 
     auto note_on(char note, double time) -> void;
     auto note_off(char note, double time) -> void;
