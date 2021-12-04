@@ -14,7 +14,7 @@ instrument::instrument(
     // Create the keyboard
     for (auto [index, key] : blga::enumerate(blga::keyboard)) {
         d_notes[key] = {
-            .frequency = blga::note_frequency(3, key_name{index}),
+            .frequency = blga::note_frequency(15 + index),
             .toggle_time = -1.0,
             .active = false
         };
