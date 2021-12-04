@@ -47,7 +47,6 @@ auto main() -> int
 	fmt::print(blga::keyboard_ascii);
 
     auto kb = blga::instrument{
-        0.0,
         blga::envelope{
             .attack_time = 0.01,
             .decay_time = 0.01,
@@ -58,7 +57,7 @@ auto main() -> int
         [&](double frequency, double dt) {
             constexpr auto two_pi = 2.0 * std::numbers::pi;
             const auto lfo = 0.0 * frequency * std::sin(two_pi * 5.0 * dt);
-			
+
 			double amp = 0.0;
 			for (double i = 1; i < 10; ++i) {
 				amp += std::sin(two_pi * frequency * i * dt + lfo) / i;

@@ -3,12 +3,10 @@
 namespace blga {
 
 instrument::instrument(
-    double frequency,
     const blga::envelope& envelope,
     const blga::oscillator& oscillator
 )
-    : d_frequency(frequency)
-    , d_envelope(envelope)
+    : d_envelope(envelope)
     , d_oscillator(oscillator)
 {
 }

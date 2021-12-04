@@ -18,13 +18,11 @@ struct note
 class instrument
 {
     std::unordered_map<char, note> d_notes; // Temporary, generalise later
-    double           d_frequency;
     blga::envelope   d_envelope;
     blga::oscillator d_oscillator;
 
 public:
     instrument(
-        double frequency,
         const blga::envelope& envelope,
         const blga::oscillator& oscillator
     );
