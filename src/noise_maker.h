@@ -28,9 +28,8 @@ public:
 	noise_maker(const blga::instrument& instrument);
     ~noise_maker();
 
-    double get_time() const { return d_time; }
-
-    blga::instrument& get_instrument() { return d_instrument; }
+    auto get_time() const -> double { return d_time; }
+    auto get_instrument() -> blga::instrument& { return d_instrument; }
 };
 
 }

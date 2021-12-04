@@ -29,15 +29,13 @@ auto instrument::note_off(char note, double dt) -> void
 auto instrument::amplitude(double dt) -> double
 {
     double amp = 0.0;
-    double scale = 0.0;
     for (const auto& [key, note] : d_notes) {
         amp += (
             d_envelope.amplitude(dt, note.on, note.off, note.active) *
             d_oscillator(note.frequency, dt)
         );
-        ++scale;
     }
-    return amp / scale;
+    return amp;
 }
 
 auto instrument::is_note_active(char note) const -> bool
