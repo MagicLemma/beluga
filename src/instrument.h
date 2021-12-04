@@ -10,9 +10,9 @@ using oscillator = std::function<double(double, double)>;
 
 struct note
 {
-    double frequency;
+    int    key;
     double toggle_time; // Time it was last toggle on or off
-    bool active;
+    bool   active;
 };
 
 class instrument

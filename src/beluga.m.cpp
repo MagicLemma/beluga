@@ -52,11 +52,9 @@ auto main() -> int
 			auto time = sound.get_time();
 
 			if (key_down && !active) {
-				fmt::print("\rNote {} Hz", blga::note_frequency(15 + index));
 				instrument.note_on(key, time);
 			}
 			else if (!key_down && active) {
-				fmt::print("\rNote off                         ");
 				instrument.note_off(key, time);
 			}
 		}

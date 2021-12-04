@@ -12,9 +12,9 @@ instrument::instrument(
     , d_oscillator(oscillator)
 {
     // Create the keyboard
-    for (auto [index, key] : blga::enumerate(blga::keyboard)) {
-        d_notes[key] = {
-            .frequency = blga::note_frequency(15 + index),
+    for (auto [index, keyboard_button] : blga::enumerate(blga::keyboard)) {
+        d_notes[keyboard_button] = {
+            .key = 15 + index,
             .toggle_time = -1.0,
             .active = false
         };
@@ -38,7 +38,7 @@ auto instrument::amplitude(double time) -> double
     double amp = 0.0;
     for (const auto& [key, note] : d_notes) {
         amp += d_envelope.amplitude(time, note.toggle_time, note.active) *
-               d_oscillator(note.frequency, time);
+               d_oscillator(blga::note_frequency(note.key), time);
     }
     return amp;
 }
