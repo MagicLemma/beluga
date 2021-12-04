@@ -28,7 +28,7 @@ auto main() -> int
             .start_amplitude = 1.2,
             .sustain_amplitude = 0.8
         },
-        [&](double frequency, double dt) {
+        [](double frequency, double dt) {
             constexpr auto two_pi = 2.0 * std::numbers::pi;
             const auto lfo = 0.0 * frequency * std::sin(two_pi * 5.0 * dt);
 
