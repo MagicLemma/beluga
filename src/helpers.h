@@ -11,7 +11,7 @@ inline constexpr auto enumerate = std::views::transform([start = 0](auto&& val) 
 });
 
 template <class Enum>
-constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept
+constexpr auto to_underlying(Enum e) noexcept -> std::underlying_type_t<Enum>
 {
     return static_cast<std::underlying_type_t<Enum>>(e);
 }

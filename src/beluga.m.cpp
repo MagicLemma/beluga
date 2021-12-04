@@ -27,7 +27,7 @@ enum class key_name
 	B  = 11,
 };
 
-double note_frequency(const int octave, const key_name k)
+auto note_frequency(const int octave, const key_name k) -> double
 {
 	constexpr double a2_frequency = 110.0;
 	constexpr double twelfth_root_two = 1.05946309435929526456182529494634170077920; // BIG
@@ -37,12 +37,12 @@ double note_frequency(const int octave, const key_name k)
 	return a2_frequency * std::pow(twelfth_root_two, key);
 }
 
-bool is_key_down(char key)
+auto is_key_down(char key) -> bool
 {
 	return GetAsyncKeyState(static_cast<unsigned char>(key)) & 0x8000;
 }
 
-int main()
+auto main() -> int
 {
 	fmt::print(blga::keyboard_ascii);
 
@@ -51,15 +51,22 @@ int main()
         blga::envelope{
             .attack_time = 0.01,
             .decay_time = 0.01,
-            .release_time = 1.0,
+            .release_time = 0.3,
             .start_amplitude = 1.2,
             .sustain_amplitude = 0.8
         },
         [&](double frequency, double dt) {
             constexpr auto two_pi = 2.0 * std::numbers::pi;
-            const auto lfo = 0.003 * frequency * std::sin(two_pi * 5.0 * dt);
-
-            return std::sin(two_pi * frequency * dt + lfo);
+            const auto lfo = 0.0 * frequency * std::sin(two_pi * 5.0 * dt);
+#if 1
+			double amp = 0.0;
+			for (double i = 1; i < 10; ++i) {
+				amp += std::sin(two_pi * frequency * i * dt + lfo) / i;
+			}
+			return amp / 10;
+#else
+            return std::sin(two_pi * frequency * dt + lfo) > 0.0 ? 1.0 : -1.0;
+#endif
         }
     };
 

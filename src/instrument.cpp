@@ -13,14 +13,14 @@ instrument::instrument(
 {
 }
 
-void instrument::note_on(char note, double dt, double frequency)
+auto instrument::note_on(char note, double dt, double frequency) -> void
 {
     d_notes[note].on = dt;
     d_notes[note].active = true;
     d_notes[note].frequency = frequency;
 }
 
-void instrument::note_off(char note, double dt)
+auto instrument::note_off(char note, double dt) -> void
 {
     d_notes[note].off = dt;
     d_notes[note].active = false;
