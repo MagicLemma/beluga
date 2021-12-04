@@ -58,15 +58,12 @@ auto main() -> int
         [&](double frequency, double dt) {
             constexpr auto two_pi = 2.0 * std::numbers::pi;
             const auto lfo = 0.0 * frequency * std::sin(two_pi * 5.0 * dt);
-#if 1
+			
 			double amp = 0.0;
 			for (double i = 1; i < 10; ++i) {
 				amp += std::sin(two_pi * frequency * i * dt + lfo) / i;
 			}
 			return amp / 10;
-#else
-            return std::sin(two_pi * frequency * dt + lfo) > 0.0 ? 1.0 : -1.0;
-#endif
         }
     };
 

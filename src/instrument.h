@@ -11,8 +11,7 @@ using oscillator = std::function<double(double, double)>;
 struct note
 {
     double frequency;
-    double on;
-    double off;
+    double age; // Time it has been in the curent state (on or off)
     bool active;
 };
 

@@ -12,13 +12,12 @@ struct envelope
     double start_amplitude;
     double sustain_amplitude;
 
-    auto amplitude(double dt, double on, double off, bool active) const -> double
+    auto amplitude(double time, double age, bool active) const -> double
     {
+        const auto note_time = time - age;
         double amp = 0.0;
 
         if (active) {
-            auto note_time = dt - on;
-
             if (note_time < attack_time) { // Attack
                 amp = (note_time / attack_time) * start_amplitude;
             }
@@ -32,7 +31,6 @@ struct envelope
             }
         }
         else {
-            auto note_time = dt - off;
             amp = (1.0 - (note_time / release_time)) * sustain_amplitude;
         }
 
