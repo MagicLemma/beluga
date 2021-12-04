@@ -50,10 +50,10 @@ auto main() -> int
 			auto time = sound.get_time();
 
 			if (key_down && !active) {
-				sound.get_instrument().note_on(key, time);
+				instrument.note_on(key, time);
 			}
 			else if (!key_down && active) {
-				sound.get_instrument().note_off(key, time);
+				instrument.note_off(key, time);
 			}
 		}
 	}
