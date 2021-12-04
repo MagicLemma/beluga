@@ -11,32 +11,6 @@
 #include <numbers>
 #include <optional>
 
-enum class key_name
-{
-	C  = 0,
-	Cs = 1, Db = Cs,
-	D  = 2,
-	Ds = 3, Eb = Ds,
-	E  = 4,
-	F  = 5,
-	Fs = 6, Gb = Fs,
-	G  = 7,
-	Gs = 8, Ab = Gs,
-	A  = 9, // A2
-	As = 10, Bb = As,
-	B  = 11,
-};
-
-auto note_frequency(const int octave, const key_name k) -> double
-{
-	constexpr double a2_frequency = 110.0;
-	constexpr double twelfth_root_two = 1.05946309435929526456182529494634170077920; // BIG
-	
-	// The -2 and -9 offsets come from the fact that we are tuned to A2 (octave 2, key 9).
-	const auto key = 12 * (octave - 2) + (blga::to_underlying(k) - 9);
-	return a2_frequency * std::pow(twelfth_root_two, key);
-}
-
 auto is_key_down(char key) -> bool
 {
 	return GetAsyncKeyState(static_cast<unsigned char>(key)) & 0x8000;
@@ -73,13 +47,13 @@ auto main() -> int
 		for (auto [index, key] : blga::enumerate(blga::keyboard)) {
 			auto key_down = is_key_down(key);
 			auto active = instrument.is_note_active(key);
-			auto freq = note_frequency(3, key_name{index});
+			auto time = sound.get_time();
 
 			if (key_down && !active) {
-				sound.get_instrument().note_on(key, sound.get_time(), freq);
+				sound.get_instrument().note_on(key, time);
 			}
 			else if (!key_down && active) {
-				sound.get_instrument().note_off(key, sound.get_time());
+				sound.get_instrument().note_off(key, time);
 			}
 		}
 	}

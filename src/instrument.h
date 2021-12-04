@@ -11,7 +11,7 @@ using oscillator = std::function<double(double, double)>;
 struct note
 {
     double frequency;
-    double age; // Time it has been in the curent state (on or off)
+    double toggle_time; // Time it was last toggle on or off
     bool active;
 };
 
@@ -27,7 +27,7 @@ public:
         const blga::oscillator& oscillator
     );
 
-    auto note_on(char note, double dt, double frequency) -> void;
+    auto note_on(char note, double dt) -> void;
     auto note_off(char note, double dt) -> void;
     auto is_note_active(char note) const -> bool;
 
