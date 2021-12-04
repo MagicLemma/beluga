@@ -21,24 +21,24 @@ instrument::instrument(
     }
 }
 
-auto instrument::note_on(char note, double dt) -> void
+auto instrument::note_on(char note, double time) -> void
 {
-    d_notes[note].toggle_time = dt;
+    d_notes[note].toggle_time = time;
     d_notes[note].active = true;
 }
 
-auto instrument::note_off(char note, double dt) -> void
+auto instrument::note_off(char note, double time) -> void
 {
-    d_notes[note].toggle_time = dt;
+    d_notes[note].toggle_time = time;
     d_notes[note].active = false;
 }
 
-auto instrument::amplitude(double dt) -> double
+auto instrument::amplitude(double time) -> double
 {
     double amp = 0.0;
     for (const auto& [key, note] : d_notes) {
-        amp += d_envelope.amplitude(dt, note.toggle_time, note.active) *
-               d_oscillator(note.frequency, dt);
+        amp += d_envelope.amplitude(time, note.toggle_time, note.active) *
+               d_oscillator(note.frequency, time);
     }
     return amp;
 }

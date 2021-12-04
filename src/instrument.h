@@ -27,11 +27,11 @@ public:
         const blga::oscillator& oscillator
     );
 
-    auto note_on(char note, double dt) -> void;
-    auto note_off(char note, double dt) -> void;
+    auto note_on(char note, double time) -> void;
+    auto note_off(char note, double time) -> void;
     auto is_note_active(char note) const -> bool;
 
-    auto amplitude(double dt) -> double;
+    auto amplitude(double time) -> double;
 };
 
 

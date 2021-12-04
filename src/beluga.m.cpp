@@ -28,13 +28,13 @@ auto main() -> int
             .start_amplitude = 1.2,
             .sustain_amplitude = 0.8
         },
-        [](double frequency, double dt) {
+        [](double frequency, double time) {
             constexpr auto two_pi = 2.0 * std::numbers::pi;
-            const auto lfo = 0.0 * frequency * std::sin(two_pi * 5.0 * dt);
+            const auto lfo = 0.0 * frequency * std::sin(two_pi * 5.0 * time);
 
 			double amp = 0.0;
 			for (double i = 1; i < 10; ++i) {
-				amp += std::sin(two_pi * frequency * i * dt + lfo) / i;
+				amp += std::sin(two_pi * frequency * i * time + lfo) / i;
 			}
 			return amp / 10;
         }
