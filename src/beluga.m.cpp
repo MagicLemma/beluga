@@ -39,7 +39,8 @@ auto main() -> int
         }
     };
 
-	auto sound = blga::noise_maker{kb};
+	auto sound = blga::noise_maker{};
+	sound.add_channel(0, kb);
 
 	std::unordered_map<char, bool> input;
 	const auto is_key_active = [&](char k) {

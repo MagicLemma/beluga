@@ -18,9 +18,10 @@ struct envelope
 
 struct note
 {
-    int    key;
-    double toggle_time; // Time it was last toggle on or off
-    bool   active;
+    std::size_t channel;
+    int         key;
+    double      toggle_time; // Time it was last toggle on or off
+    bool        active;
 };
 
 struct instrument

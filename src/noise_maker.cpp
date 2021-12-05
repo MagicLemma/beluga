@@ -19,9 +19,8 @@ auto scale(double value) -> double
 
 }
 
-noise_maker::noise_maker(const blga::instrument& instrument)
-    : d_instrument{instrument}
-    , d_audio_buffer{}
+noise_maker::noise_maker()
+    : d_audio_buffer{}
     , d_thread{}
     , d_ready{true}
     , d_time{0.0}
@@ -54,8 +53,10 @@ noise_maker::noise_maker(const blga::instrument& instrument)
             for (auto& datum : block.data) {
                 double amp = 0.0;
                 for (const auto& note : d_notes) {
-                    if (note.active || d_time < note.toggle_time + d_instrument.envelope.release_time) {
-                        amp += blga::amplitude(note, d_instrument, d_time);
+                    if (auto it = d_channels.find(note.channel); it != d_channels.end()) {
+                        if (note.active || d_time < note.toggle_time + it->second.envelope.release_time) {
+                            amp += blga::amplitude(note, it->second, d_time);
+                        }
                     }
                 }
                 datum = static_cast<short>(scale(amp) * 0.2);
@@ -72,10 +73,15 @@ noise_maker::~noise_maker()
     d_ready = false;
 }
 
+auto noise_maker::add_channel(std::size_t channel, const blga::instrument& instrument) -> void
+{
+    d_channels.emplace(channel, instrument);
+}
+
 auto noise_maker::note_on(int key) -> void
 {
     auto lock = std::unique_lock{d_instrument_mtx};
-    d_notes.emplace_back(key, d_time, true);
+    d_notes.emplace_back(0, key, d_time, true);
 }
 
 auto noise_maker::note_off(int key) -> void
