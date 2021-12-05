@@ -1,4 +1,5 @@
 #include "components.h"
+#include "helpers.h"
 
 namespace blga {
 
@@ -28,7 +29,7 @@ double amplitude(
         amp = (1.0 - (note_time / envelope.release_time)) * envelope.sustain_amplitude;
     }
 
-    return std::max(amp, 0.0);
+    return std::max(amp, 0.0) * oscillator(blga::note_frequency(note.key), time);
 }
 
 }
