@@ -72,19 +72,19 @@ noise_maker::~noise_maker()
     d_ready = false;
 }
 
-auto noise_maker::note_on(int key, double time) -> void
+auto noise_maker::note_on(int key) -> void
 {
     auto lock = std::unique_lock{d_instrument_mtx};
-    d_notes.emplace_back(key, time, true);
+    d_notes.emplace_back(key, d_time, true);
 }
 
-auto noise_maker::note_off(int key, double time) -> void
+auto noise_maker::note_off(int key) -> void
 {
     auto lock = std::unique_lock{d_instrument_mtx};
     for (auto& note : d_notes) {
         if (note.key == key && note.active) {
             note.active = false;
-            note.toggle_time = time;
+            note.toggle_time = d_time;
         }
     }
 }

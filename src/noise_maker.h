@@ -32,12 +32,8 @@ public:
 	noise_maker(const blga::instrument& instrument);
     ~noise_maker();
 
-    auto get_time() const -> double { return d_time; }
-    auto get_instrument() -> blga::instrument& { return d_instrument; }
-    auto get_instrument_mtx() -> std::mutex& { return d_instrument_mtx; }
-
-    auto note_on(int key, double time) -> void;
-    auto note_off(int key, double time) -> void;
+    auto note_on(int key) -> void;
+    auto note_off(int key) -> void;
 };
 
 }

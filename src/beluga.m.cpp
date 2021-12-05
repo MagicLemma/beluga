@@ -50,19 +50,17 @@ auto main() -> int
 	};
 
 	while (!is_key_down('A')) {
-		auto time = sound.get_time();
-		
 		for (auto [index, key] : blga::enumerate(blga::keyboard)) {
 			int k = index + 15;
 			auto key_down = is_key_down(key);
 			auto active = is_key_active(key);
 
 			if (key_down && !active) {
-				sound.note_on(k, time);
+				sound.note_on(k);
 				input[key] = true;
 			}
 			else if (!key_down && active) {
-				sound.note_off(k, time);
+				sound.note_off(k);
 				input[key] = false;
 			}
 		}
