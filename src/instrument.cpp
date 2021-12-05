@@ -35,12 +35,15 @@ auto instrument::note_off(int note, double time) -> void
 auto instrument::amplitude(double time) -> double
 {
     double amp = 0.0;
-    for (const auto& [key, note] : d_notes) {
+    auto count = std::erase_if(d_notes, [&](const auto& it) {
+        const auto& [key, note] = it;
         if (note.active || time < note.toggle_time + d_envelope.release_time) {
             amp += d_envelope.amplitude(time, note.toggle_time, note.active) *
                 d_oscillator(blga::note_frequency(key), time);
+            return false;
         }
-    }
+        return true; // Delete all notes that are done
+    });
     return amp;
 }
 
