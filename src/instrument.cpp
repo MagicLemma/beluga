@@ -13,7 +13,7 @@ instrument::instrument(
 {
     // Create the keyboard
     for (auto [index, keyboard_button] : blga::enumerate(blga::keyboard)) {
-        d_notes[keyboard_button] = {
+        d_notes[15 + index] = {
             .key = 15 + index, // Bumped up by 15 so that the first note is C3
             .toggle_time = -1.0,
             .active = false
@@ -21,13 +21,13 @@ instrument::instrument(
     }
 }
 
-auto instrument::note_on(char note, double time) -> void
+auto instrument::note_on(int note, double time) -> void
 {
     d_notes[note].toggle_time = time;
     d_notes[note].active = true;
 }
 
-auto instrument::note_off(char note, double time) -> void
+auto instrument::note_off(int note, double time) -> void
 {
     d_notes[note].toggle_time = time;
     d_notes[note].active = false;
@@ -45,7 +45,7 @@ auto instrument::amplitude(double time) -> double
     return amp;
 }
 
-auto instrument::is_note_active(char note) const -> bool
+auto instrument::is_note_active(int note) const -> bool
 {
     if (auto it = d_notes.find(note); it != d_notes.end()) {
         return it->second.active;

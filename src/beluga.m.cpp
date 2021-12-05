@@ -47,15 +47,16 @@ auto main() -> int
 		auto& instrument = sound.get_instrument();
 		
 		for (auto [index, key] : blga::enumerate(blga::keyboard)) {
+			int k = index + 15;
 			auto key_down = is_key_down(key);
-			auto active = instrument.is_note_active(key);
+			auto active = instrument.is_note_active(k);
 			auto time = sound.get_time();
 
 			if (key_down && !active) {
-				instrument.note_on(key, time);
+				instrument.note_on(k, time);
 			}
 			else if (!key_down && active) {
-				instrument.note_off(key, time);
+				instrument.note_off(k, time);
 			}
 		}
 	}
