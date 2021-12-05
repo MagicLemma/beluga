@@ -14,8 +14,8 @@ namespace blga {
 class noise_maker
 {
     std::mutex d_instrument_mtx;
-    std::unordered_map<std::size_t, blga::instrument> d_channels;
-    std::vector<blga::note> d_notes;
+    std::vector<blga::instrument> d_channels;
+    std::vector<blga::note>       d_notes;
 
 	blga::audio_buffer<blga::num_blocks, blga::samples_per_block> d_audio_buffer;
 
@@ -29,7 +29,7 @@ public:
 	noise_maker();
     ~noise_maker();
 
-    auto add_channel(std::size_t channel, const blga::instrument& instrument) -> void;
+    auto add_channel(const blga::instrument& instrument) -> void;
 
     auto note_on(int key, std::size_t channel) -> void;
     auto note_off(int key, std::size_t channel) -> void;

@@ -53,9 +53,10 @@ noise_maker::noise_maker()
             for (auto& datum : block.data) {
                 double amp = 0.0;
                 std::erase_if(d_notes, [&](const auto& note) {
-                    if (auto it = d_channels.find(note.channel); it != d_channels.end()) {
-                        if (note.active || d_time < note.toggle_time + it->second.envelope.release_time) {
-                            amp += blga::amplitude(note, it->second, d_time);
+                    if (note.channel < d_channels.size()) {
+                        const auto& instrument = d_channels[note.channel];
+                        if (note.active || d_time < note.toggle_time + instrument.envelope.release_time) {
+                            amp += blga::amplitude(note, instrument, d_time);
                             return false;
                         }
                     }
@@ -75,9 +76,9 @@ noise_maker::~noise_maker()
     d_ready = false;
 }
 
-auto noise_maker::add_channel(std::size_t channel, const blga::instrument& instrument) -> void
+auto noise_maker::add_channel(const blga::instrument& instrument) -> void
 {
-    d_channels.emplace(channel, instrument);
+    d_channels.push_back(instrument);
 }
 
 auto noise_maker::note_on(int key, std::size_t channel) -> void
