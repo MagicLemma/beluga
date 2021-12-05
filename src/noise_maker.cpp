@@ -47,7 +47,7 @@ noise_maker::noise_maker()
     d_thread = std::jthread([&, device]{
         while (d_ready) {
             d_semaphore.acquire();
-            auto lock = std::unique_lock{d_instrument_mtx};
+            auto lock = std::unique_lock{d_mutex};
             
             auto& block = d_audio_buffer.next_block();
             for (auto& datum : block.data) {
@@ -83,13 +83,13 @@ auto noise_maker::add_channel(const blga::instrument& instrument) -> void
 
 auto noise_maker::note_on(int key, std::size_t channel) -> void
 {
-    auto lock = std::unique_lock{d_instrument_mtx};
+    auto lock = std::unique_lock{d_mutex};
     d_notes.emplace_back(channel, key, d_time, true);
 }
 
 auto noise_maker::note_off(int key, std::size_t channel) -> void
 {
-    auto lock = std::unique_lock{d_instrument_mtx};
+    auto lock = std::unique_lock{d_mutex};
     for (auto& note : d_notes) {
         if (note.key == key && note.channel == channel && note.active) {
             note.active = false;
