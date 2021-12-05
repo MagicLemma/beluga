@@ -52,13 +52,15 @@ noise_maker::noise_maker()
             auto& block = d_audio_buffer.next_block();
             for (auto& datum : block.data) {
                 double amp = 0.0;
-                for (const auto& note : d_notes) {
+                std::erase_if(d_notes, [&](const auto& note) {
                     if (auto it = d_channels.find(note.channel); it != d_channels.end()) {
                         if (note.active || d_time < note.toggle_time + it->second.envelope.release_time) {
                             amp += blga::amplitude(note, it->second, d_time);
+                            return false;
                         }
                     }
-                }
+                    return true; // Delete all finished notes and those with unknown channel
+                });
                 datum = static_cast<short>(scale(amp) * 0.2);
                 d_time += 1.0 / sample_rate;
             }
