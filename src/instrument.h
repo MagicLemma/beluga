@@ -16,7 +16,7 @@ struct note
     bool   active;
 };
 
-class instrument
+struct instrument
 {
     std::vector<note> d_notes; // Temporary, generalise later
     blga::envelope    d_envelope;

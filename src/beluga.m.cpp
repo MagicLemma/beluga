@@ -51,21 +51,19 @@ auto main() -> int
 	};
 
 	while (!is_key_down('A')) {
-		auto lock = std::unique_lock{sound.get_instrument_mtx()};
-		auto& instrument = sound.get_instrument();
+		auto time = sound.get_time();
 		
 		for (auto [index, key] : blga::enumerate(blga::keyboard)) {
 			int k = index + 15;
 			auto key_down = is_key_down(key);
 			auto active = is_key_active(key);
-			auto time = sound.get_time();
 
 			if (key_down && !active) {
-				instrument.note_on(k, time);
+				sound.note_on(k, time);
 				input[key] = true;
 			}
 			else if (!key_down && active) {
-				instrument.note_off(k, time);
+				sound.note_off(k, time);
 				input[key] = false;
 			}
 		}

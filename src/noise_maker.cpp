@@ -1,5 +1,5 @@
 #include "noise_maker.h"
-
+#include "helpers.h"
 #include "constants.h"
 
 #include <Windows.h>
@@ -52,7 +52,14 @@ noise_maker::noise_maker(const blga::instrument& instrument)
             
             auto& block = d_audio_buffer.next_block();
             for (auto& datum : block.data) {
-                datum = static_cast<short>(scale(d_instrument.amplitude(d_time)) * 0.2);
+                double amp = 0.0;
+                for (const auto& note : d_notes) {
+                    if (note.active || d_time < note.toggle_time + d_instrument.d_envelope.release_time) {
+                        amp += d_instrument.d_envelope.amplitude(d_time, note.toggle_time, note.active) *
+                               d_instrument.d_oscillator(blga::note_frequency(note.key), d_time);
+                    }
+                }
+                datum = static_cast<short>(scale(amp) * 0.2);
                 d_time += 1.0 / sample_rate;
             }
 
@@ -64,6 +71,23 @@ noise_maker::noise_maker(const blga::instrument& instrument)
 noise_maker::~noise_maker()
 {
     d_ready = false;
+}
+
+auto noise_maker::note_on(int key, double time) -> void
+{
+    auto lock = std::unique_lock{d_instrument_mtx};
+    d_notes.emplace_back(key, time, true);
+}
+
+auto noise_maker::note_off(int key, double time) -> void
+{
+    auto lock = std::unique_lock{d_instrument_mtx};
+    for (auto& note : d_notes) {
+        if (note.key == key && note.active) {
+            note.active = false;
+            note.toggle_time = time;
+        }
+    }
 }
 
 }
