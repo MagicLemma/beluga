@@ -12,9 +12,9 @@
 namespace blga {
 namespace {
 
-auto scale(double value) -> short
+auto scale(double value) -> double
 {
-	return static_cast<short>(std::clamp(value, -1.0, 1.0) * std::numeric_limits<short>::max());
+	return std::clamp(value, -1.0, 1.0) * std::numeric_limits<short>::max();
 }
 
 }
@@ -52,7 +52,7 @@ noise_maker::noise_maker(const blga::instrument& instrument)
             
             auto& block = d_audio_buffer.next_block();
             for (auto& datum : block.data) {
-                datum = scale(d_instrument.amplitude(d_time));
+                datum = static_cast<short>(scale(d_instrument.amplitude(d_time)) * 0.2);
                 d_time += 1.0 / sample_rate;
             }
 

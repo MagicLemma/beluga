@@ -37,8 +37,10 @@ auto instrument::amplitude(double time) -> double
 {
     double amp = 0.0;
     for (const auto& [key, note] : d_notes) {
-        amp += d_envelope.amplitude(time, note.toggle_time, note.active) *
-               d_oscillator(blga::note_frequency(note.key), time);
+        if (note.active || time < note.toggle_time + d_envelope.release_time) {
+            amp += d_envelope.amplitude(time, note.toggle_time, note.active) *
+                d_oscillator(blga::note_frequency(note.key), time);
+        }
     }
     return amp;
 }
