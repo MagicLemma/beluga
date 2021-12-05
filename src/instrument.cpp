@@ -14,7 +14,6 @@ instrument::instrument(
     // Create the keyboard
     for (auto [index, keyboard_button] : blga::enumerate(blga::keyboard)) {
         d_notes[15 + index] = {
-            .key = 15 + index, // Bumped up by 15 so that the first note is C3
             .toggle_time = -1.0,
             .active = false
         };
@@ -39,7 +38,7 @@ auto instrument::amplitude(double time) -> double
     for (const auto& [key, note] : d_notes) {
         if (note.active || time < note.toggle_time + d_envelope.release_time) {
             amp += d_envelope.amplitude(time, note.toggle_time, note.active) *
-                d_oscillator(blga::note_frequency(note.key), time);
+                d_oscillator(blga::note_frequency(key), time);
         }
     }
     return amp;

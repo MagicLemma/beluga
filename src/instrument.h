@@ -10,7 +10,6 @@ using oscillator = std::function<double(double, double)>;
 
 struct note
 {
-    int    key;
     double toggle_time; // Time it was last toggle on or off
     bool   active;
 };
