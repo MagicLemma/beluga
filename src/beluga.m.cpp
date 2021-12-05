@@ -42,6 +42,14 @@ auto main() -> int
 
 	auto sound = blga::noise_maker{kb};
 
+	std::unordered_map<char, bool> input;
+	const auto is_key_active = [&](char k) {
+		if (auto it = input.find(k); it != input.end()) {
+			return it->second;
+		}
+		return false;
+	};
+
 	while (!is_key_down('A')) {
 		auto lock = std::unique_lock{sound.get_instrument_mtx()};
 		auto& instrument = sound.get_instrument();
@@ -49,14 +57,16 @@ auto main() -> int
 		for (auto [index, key] : blga::enumerate(blga::keyboard)) {
 			int k = index + 15;
 			auto key_down = is_key_down(key);
-			auto active = instrument.is_note_active(k);
+			auto active = is_key_active(key);
 			auto time = sound.get_time();
 
 			if (key_down && !active) {
 				instrument.note_on(k, time);
+				input[key] = true;
 			}
 			else if (!key_down && active) {
 				instrument.note_off(k, time);
+				input[key] = false;
 			}
 		}
 	}
