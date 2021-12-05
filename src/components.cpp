@@ -3,10 +3,10 @@
 
 namespace blga {
 
-double amplitude(
+auto amplitude(
     const blga::note& note,
     const blga::instrument& instrument,
-    double time)
+    double time) -> double
 {
     const auto note_time = time - note.toggle_time;
     const auto& [envelope, oscillator] = instrument;

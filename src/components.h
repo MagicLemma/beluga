@@ -4,6 +4,14 @@
 
 namespace blga {
 
+struct note
+{
+    std::size_t channel;
+    int         key;
+    double      toggle_time; // Time it was last toggle on or off
+    bool        active;
+};
+
 using oscillator = std::function<double(double, double)>;
 
 struct envelope
@@ -16,24 +24,14 @@ struct envelope
     double sustain_amplitude;
 };
 
-struct note
-{
-    std::size_t channel;
-    int         key;
-    double      toggle_time; // Time it was last toggle on or off
-    bool        active;
-};
-
 struct instrument
 {
     blga::envelope   envelope;
     blga::oscillator oscillator;
 };
 
-double amplitude(
-    const blga::note& note,
-    const blga::instrument& instrument,
-    double time
-);
+auto amplitude(
+    const blga::note& note, const blga::instrument& instrument, double time
+) -> double;
 
 }
