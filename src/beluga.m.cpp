@@ -1,8 +1,7 @@
 #include "constants.h"
 #include "helpers.h"
 #include "noise_maker.h"
-#include "envelope.h"
-#include "instrument.h"
+#include "components.h"
 
 #include <fmt/format.h>
 

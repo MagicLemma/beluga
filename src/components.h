@@ -1,13 +1,20 @@
 #pragma once
-#include "envelope.h"
-
-#include <atomic>
+#include <cmath>
 #include <functional>
-#include <vector>
 
 namespace blga {
 
 using oscillator = std::function<double(double, double)>;
+
+struct envelope
+{
+    double attack_time;
+    double decay_time;
+    double release_time;
+
+    double start_amplitude;
+    double sustain_amplitude;
+};
 
 struct note
 {
@@ -22,5 +29,10 @@ struct instrument
     blga::oscillator oscillator;
 };
 
+double amplitude(
+    const blga::note& note,
+    const blga::instrument& instrument,
+    double time
+);
 
 }

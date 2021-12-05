@@ -1,7 +1,7 @@
 #pragma once
 #include "constants.h"
 #include "audio_buffer.h"
-#include "instrument.h"
+#include "components.h"
 
 #include <atomic>
 #include <functional>
