@@ -18,8 +18,8 @@ struct note
 
 struct instrument
 {
-    blga::envelope   d_envelope;
-    blga::oscillator d_oscillator;
+    blga::envelope   envelope;
+    blga::oscillator oscillator;
 };
 
 

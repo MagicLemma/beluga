@@ -54,9 +54,9 @@ noise_maker::noise_maker(const blga::instrument& instrument)
             for (auto& datum : block.data) {
                 double amp = 0.0;
                 for (const auto& note : d_notes) {
-                    if (note.active || d_time < note.toggle_time + d_instrument.d_envelope.release_time) {
-                        amp += d_instrument.d_envelope.amplitude(d_time, note.toggle_time, note.active) *
-                               d_instrument.d_oscillator(blga::note_frequency(note.key), d_time);
+                    if (note.active || d_time < note.toggle_time + d_instrument.envelope.release_time) {
+                        amp += d_instrument.envelope.amplitude(d_time, note.toggle_time, note.active) *
+                               d_instrument.oscillator(blga::note_frequency(note.key), d_time);
                     }
                 }
                 datum = static_cast<short>(scale(amp) * 0.2);
