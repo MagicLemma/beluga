@@ -80,17 +80,17 @@ auto noise_maker::add_channel(std::size_t channel, const blga::instrument& instr
     d_channels.emplace(channel, instrument);
 }
 
-auto noise_maker::note_on(int key) -> void
+auto noise_maker::note_on(int key, std::size_t channel) -> void
 {
     auto lock = std::unique_lock{d_instrument_mtx};
-    d_notes.emplace_back(0, key, d_time, true);
+    d_notes.emplace_back(channel, key, d_time, true);
 }
 
-auto noise_maker::note_off(int key) -> void
+auto noise_maker::note_off(int key, std::size_t channel) -> void
 {
     auto lock = std::unique_lock{d_instrument_mtx};
     for (auto& note : d_notes) {
-        if (note.key == key && note.active) {
+        if (note.key == key && note.channel == channel && note.active) {
             note.active = false;
             note.toggle_time = d_time;
         }

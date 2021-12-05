@@ -38,7 +38,6 @@ auto main() -> int
 			return amp / 10;
         }
     };
-
 	auto sound = blga::noise_maker{};
 	sound.add_channel(0, kb);
 
@@ -57,11 +56,11 @@ auto main() -> int
 			auto active = is_key_active(key);
 
 			if (key_down && !active) {
-				sound.note_on(k);
+				sound.note_on(k, 0);
 				input[key] = true;
 			}
 			else if (!key_down && active) {
-				sound.note_off(k);
+				sound.note_off(k, 0);
 				input[key] = false;
 			}
 		}

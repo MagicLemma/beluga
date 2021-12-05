@@ -13,8 +13,6 @@ namespace blga {
 
 class noise_maker
 {
-    // Fix the race condition in accessing this (mostly will go when we switch to
-    // using notes)
     std::mutex d_instrument_mtx;
     std::unordered_map<std::size_t, blga::instrument> d_channels;
     std::vector<blga::note> d_notes;
@@ -33,8 +31,8 @@ public:
 
     auto add_channel(std::size_t channel, const blga::instrument& instrument) -> void;
 
-    auto note_on(int key) -> void;
-    auto note_off(int key) -> void;
+    auto note_on(int key, std::size_t channel) -> void;
+    auto note_off(int key, std::size_t channel) -> void;
 };
 
 }
