@@ -17,16 +17,16 @@ class noise_maker
     std::vector<blga::instrument> d_channels;
     std::vector<blga::note>       d_notes;
 
-	blga::audio_buffer<blga::num_blocks, blga::samples_per_block> d_audio_buffer;
+    blga::audio_buffer<blga::num_blocks, blga::samples_per_block> d_audio_buffer;
 
-	std::jthread        d_thread;
-	std::atomic<bool>   d_ready;
+    std::jthread        d_thread;
+    std::atomic<bool>   d_ready;
     std::atomic<double> d_time;
 
-	std::counting_semaphore<num_blocks> d_semaphore;
+    std::counting_semaphore<num_blocks> d_semaphore;
 
 public:
-	noise_maker();
+    noise_maker();
     ~noise_maker();
 
     auto add_channel(const blga::instrument& instrument) -> void;

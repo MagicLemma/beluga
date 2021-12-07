@@ -13,9 +13,9 @@ inline constexpr auto enumerate = std::views::transform([start = 0](auto&& val) 
 // key == 0 is A2
 inline auto note_frequency(int key) -> double
 {
-	constexpr double a2_frequency = 110.0;
-	constexpr double twelfth_root_two = 1.05946309435929526; // BIG
-	return a2_frequency * std::pow(twelfth_root_two, key);
+    constexpr double a2_frequency = 110.0;
+    constexpr double twelfth_root_two = 1.05946309435929526; // BIG
+    return a2_frequency * std::pow(twelfth_root_two, key);
 }
 
 }

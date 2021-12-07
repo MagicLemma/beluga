@@ -12,12 +12,12 @@
 
 auto is_key_down(char key) -> bool
 {
-	return GetAsyncKeyState(static_cast<unsigned char>(key)) & 0x8000;
+    return GetAsyncKeyState(static_cast<unsigned char>(key)) & 0x8000;
 }
 
 auto main() -> int
 {
-	fmt::print(blga::keyboard_ascii);
+    fmt::print(blga::keyboard_ascii);
 
     auto kb = blga::instrument{
         blga::envelope{
@@ -31,40 +31,40 @@ auto main() -> int
             constexpr auto two_pi = 2.0 * std::numbers::pi;
             const auto lfo = 0.0 * frequency * std::sin(two_pi * 5.0 * time);
 
-			double amp = 0.0;
-			for (double i = 1; i < 10; ++i) {
-				amp += std::sin(two_pi * frequency * i * time + lfo) / i;
-			}
-			return amp / 10;
+            double amp = 0.0;
+            for (double i = 1; i < 10; ++i) {
+                amp += std::sin(two_pi * frequency * i * time + lfo) / i;
+            }
+            return amp / 10;
         }
     };
-	auto sound = blga::noise_maker{};
-	sound.add_channel(kb);
+    auto sound = blga::noise_maker{};
+    sound.add_channel(kb);
 
-	std::unordered_map<char, bool> input;
-	const auto is_key_active = [&](char k) {
-		if (auto it = input.find(k); it != input.end()) {
-			return it->second;
-		}
-		return false;
-	};
+    std::unordered_map<char, bool> input;
+    const auto is_key_active = [&](char k) {
+        if (auto it = input.find(k); it != input.end()) {
+            return it->second;
+        }
+        return false;
+    };
 
-	while (!is_key_down('A')) {
-		for (auto [index, key] : blga::enumerate(blga::keyboard)) {
-			int k = index + 15;
-			auto key_down = is_key_down(key);
-			auto active = is_key_active(key);
+    while (!is_key_down('A')) {
+        for (auto [index, key] : blga::enumerate(blga::keyboard)) {
+            int k = index + 15;
+            auto key_down = is_key_down(key);
+            auto active = is_key_active(key);
 
-			if (key_down && !active) {
-				sound.note_on(k, 0);
-				input[key] = true;
-			}
-			else if (!key_down && active) {
-				sound.note_off(k, 0);
-				input[key] = false;
-			}
-		}
-	}
+            if (key_down && !active) {
+                sound.note_on(k, 0);
+                input[key] = true;
+            }
+            else if (!key_down && active) {
+                sound.note_off(k, 0);
+                input[key] = false;
+            }
+        }
+    }
 
-	return 0;
+    return 0;
 }

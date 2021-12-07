@@ -14,7 +14,7 @@ namespace {
 
 auto scale(double value) -> double
 {
-	return std::clamp(value, -1.0, 1.0) * std::numeric_limits<short>::max();
+    return std::clamp(value, -1.0, 1.0) * std::numeric_limits<short>::max();
 }
 
 }
