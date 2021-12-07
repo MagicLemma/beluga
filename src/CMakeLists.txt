@@ -10,6 +10,8 @@ find_package(fmt CONFIG REQUIRED)
 
 add_executable(beluga
     beluga.m.cpp
+    noise_maker.cpp
+    components.cpp
 )
 
 target_link_libraries(beluga PRIVATE

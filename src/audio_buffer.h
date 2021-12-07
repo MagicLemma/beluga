@@ -20,7 +20,7 @@ class audio_buffer
         block(const block&) = delete;
         block& operator=(const block&) = delete;
 
-        void send_to_sound_device(HWAVEOUT device)
+        auto send_to_sound_device(HWAVEOUT device) -> void
         {
             if (header.dwFlags & WHDR_PREPARED) {
                 waveOutUnprepareHeader(device, &header, sizeof(WAVEHDR));
@@ -44,7 +44,7 @@ public:
         }
     }
 
-    block& next_block()
+    auto next_block() -> block&
     {
         d_current = (d_current + 1) % d_blocks.size();
         return d_blocks[d_current];
