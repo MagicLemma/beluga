@@ -6,9 +6,12 @@
 
 namespace blga {
 
-inline constexpr auto enumerate = std::views::transform([start = 0](auto&& val) mutable {
-    return std::make_pair(start++, std::forward<decltype(val)>(val));
-});
+inline constexpr auto enumerate(int start = 0)
+{
+    return std::views::transform([start](auto&& val) mutable {
+        return std::make_pair(start++, std::forward<decltype(val)>(val));
+    });
+}
 
 // key == 0 is A2
 inline auto note_frequency(int key) -> double

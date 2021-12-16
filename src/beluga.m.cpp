@@ -3,6 +3,11 @@
 #include "noise_maker.h"
 #include "components.h"
 
+#include <sprocket/core/game_loop.h>
+#include <sprocket/core/window.h>
+#include <sprocket/core/events.h>
+#include <sprocket/core/input.h>
+
 #include <fmt/format.h>
 
 #include <cmath>
@@ -10,61 +15,88 @@
 #include <numbers>
 #include <optional>
 
-auto is_key_down(char key) -> bool
+constexpr std::array keyboard = {
+    spkt::Keyboard::Z,
+    spkt::Keyboard::S,
+    spkt::Keyboard::X,
+    spkt::Keyboard::D,
+    spkt::Keyboard::C,
+    spkt::Keyboard::V,
+    spkt::Keyboard::G,
+    spkt::Keyboard::B,
+    spkt::Keyboard::H,
+    spkt::Keyboard::N,
+    spkt::Keyboard::J,
+    spkt::Keyboard::M,
+    spkt::Keyboard::COMMA,
+    spkt::Keyboard::L,
+    spkt::Keyboard::PERIOD,
+    spkt::Keyboard::SEMI_COLON,
+    spkt::Keyboard::FORWARD_SLASH
+};
+
+class beluga
 {
-    return GetAsyncKeyState(static_cast<unsigned char>(key)) & 0x8000;
-}
+    spkt::window* d_window;
 
-auto main() -> int
-{
-    fmt::print(blga::keyboard_ascii);
+    blga::noise_maker d_sound;
 
-    auto kb = blga::instrument{
-        blga::envelope{
-            .attack_time = 0.01,
-            .decay_time = 0.01,
-            .release_time = 0.3,
-            .start_amplitude = 1.2,
-            .sustain_amplitude = 0.8
-        },
-        [](double frequency, double time) {
-            constexpr auto two_pi = 2.0 * std::numbers::pi;
-            const auto lfo = 0.0 * frequency * std::sin(two_pi * 5.0 * time);
+public:
+    beluga(spkt::window* window)
+        : d_window(window)
+        , d_sound{}
+    {
+        d_sound.add_channel({
+            .envelope = blga::envelope{
+                .attack_time = 0.01,
+                .decay_time = 0.01,
+                .release_time = 0.3,
+                .start_amplitude = 1.2,
+                .sustain_amplitude = 0.8
+            },
+            .oscillator = [](double frequency, double time) {
+                constexpr auto two_pi = 2.0 * std::numbers::pi;
+                const auto lfo = 0.0 * frequency * std::sin(two_pi * 5.0 * time);
 
-            double amp = 0.0;
-            for (double i = 1; i < 10; ++i) {
-                amp += std::sin(two_pi * frequency * i * time + lfo) / i;
+                double amp = 0.0;
+                for (double i = 1; i < 10; ++i) {
+                    amp += std::sin(two_pi * frequency * i * time + lfo) / i;
+                }
+                return amp / 10;
             }
-            return amp / 10;
-        }
-    };
-    auto sound = blga::noise_maker{};
-    sound.add_channel(kb);
+        });
+    }
 
-    std::unordered_map<char, bool> input;
-    const auto is_key_active = [&](char k) {
-        if (auto it = input.find(k); it != input.end()) {
-            return it->second;
-        }
-        return false;
-    };
+    void on_update(double dt)
+    {
 
-    while (!is_key_down('A')) {
-        for (auto [index, key] : blga::enumerate(blga::keyboard)) {
-            int k = index + 15;
-            auto key_down = is_key_down(key);
-            auto active = is_key_active(key);
+    }
 
-            if (key_down && !active) {
-                sound.note_on(k, 0);
-                input[key] = true;
+    void on_event(spkt::event& event)
+    {
+        if (auto data = event.get_if<spkt::keyboard_pressed_event>()) {
+            if (data->key == spkt::Keyboard::A) {
+                d_window->close();
+                return;
             }
-            else if (!key_down && active) {
-                sound.note_off(k, 0);
-                input[key] = false;
+            // key == musical keyboard, button = computer keyboard
+            for (auto [key, button] : keyboard | blga::enumerate(15)) {
+                if (data->key == button) {
+                    d_sound.note_on(key, 0);
+                }
+            }
+        }
+        else if (auto data = event.get_if<spkt::keyboard_released_event>()) {
+            for (auto [key, button] : keyboard | blga::enumerate(15)) {
+                if (data->key == button) {
+                    d_sound.note_off(key, 0);
+                }
             }
         }
     }
+};
 
-    return 0;
+auto main() -> int
+{
+    return spkt::run_app<beluga>("beluga");
 }

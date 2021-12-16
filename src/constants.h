@@ -21,11 +21,6 @@ constexpr auto format = WAVEFORMATEX{
     .cbSize = 0
 };
 
-constexpr auto keyboard = std::array{
-    'Z', 'S', 'X', 'D', 'C', 'V', 'G', 'B', 'H', 'N', 'J', 'M',
-    '\xbc', 'L', '\xbe', '\xbd', '\xbf'
-};
-
 constexpr auto keyboard_ascii = std::string_view{
     "|   |   | |   |   |   |   | |   | |   |   |   |   | |   |   |\n"
     "|   | S | | D |   |   | G | | H | | J |   |   | L | | ; |   |\n"
