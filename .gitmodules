@@ -1,0 +1,3 @@
+[submodule "vendor/sprocket"]
+	path = vendor/sprocket
+	url = git@github.com:MagicLemma/sprocket.git

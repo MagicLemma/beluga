@@ -15,6 +15,7 @@ add_executable(beluga
 )
 
 target_link_libraries(beluga PRIVATE
+    sprocket
     fmt::fmt
 )
 
