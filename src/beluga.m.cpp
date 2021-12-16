@@ -15,7 +15,27 @@
 #include <numbers>
 #include <optional>
 
-constexpr std::array keyboard = {
+const auto instrument = blga::instrument{
+    .envelope = blga::envelope{
+        .attack_time = 0.01,
+        .decay_time = 0.01,
+        .release_time = 0.3,
+        .start_amplitude = 1.2,
+        .sustain_amplitude = 0.8
+    },
+    .oscillator = [](double frequency, double time) {
+        constexpr auto two_pi = 2.0 * std::numbers::pi;
+        const auto lfo = 0.0 * frequency * std::sin(two_pi * 5.0 * time);
+
+        double amp = 0.0;
+        for (double i = 1; i < 10; ++i) {
+            amp += std::sin(two_pi * frequency * i * time + lfo) / i;
+        }
+        return amp / 10;
+    }
+};
+
+constexpr auto keyboard = std::array{
     spkt::Keyboard::Z,
     spkt::Keyboard::S,
     spkt::Keyboard::X,
@@ -46,31 +66,10 @@ public:
         : d_window(window)
         , d_sound{}
     {
-        d_sound.add_channel({
-            .envelope = blga::envelope{
-                .attack_time = 0.01,
-                .decay_time = 0.01,
-                .release_time = 0.3,
-                .start_amplitude = 1.2,
-                .sustain_amplitude = 0.8
-            },
-            .oscillator = [](double frequency, double time) {
-                constexpr auto two_pi = 2.0 * std::numbers::pi;
-                const auto lfo = 0.0 * frequency * std::sin(two_pi * 5.0 * time);
-
-                double amp = 0.0;
-                for (double i = 1; i < 10; ++i) {
-                    amp += std::sin(two_pi * frequency * i * time + lfo) / i;
-                }
-                return amp / 10;
-            }
-        });
+        d_sound.add_channel(instrument);
     }
 
-    void on_update(double dt)
-    {
-
-    }
+    void on_update(double dt) {}
 
     void on_event(spkt::event& event)
     {
